@@ -1,0 +1,68 @@
+{
+  "HCMUT frontmatter": {
+    "prefix": "hb-frontmatter",
+    "body": [
+      "---",
+      "theme: ..",
+      "aspectRatio: 4/3",
+      "fonts:",
+      "  provider: none",
+      "  sans: Source Sans 3",
+      "  mono: JetBrains Mono",
+      "size: md",
+      "title: ${1:Tên bài thuyết trình}",
+      "shortTitle: ${2:Tên rút gọn}",
+      "authors:",
+      "  - ${3:Tên tác giả}",
+      "advisor: ${4:Tên giảng viên hướng dẫn}",
+      "institute: ${5:Trường Đại học Bách khoa, ĐHQG-HCM}",
+      "date: ${6:Ngày tháng năm}",
+      "---"
+    ],
+    "description": "Frontmatter mặc định cho HCMUT-Bach"
+  },
+  "HCMUT block": {
+    "prefix": "hb-block",
+    "body": [
+      "<Block title=\"${1:Tiêu đề}\">",
+      "${2:Nội dung}",
+      "</Block>"
+    ],
+    "description": "Beamer block"
+  },
+  "HCMUT alert block": {
+    "prefix": "hb-alert",
+    "body": [
+      "<Block type=\"alert\" title=\"${1:Cảnh báo}\">",
+      "${2:Nội dung cảnh báo}",
+      "</Block>"
+    ],
+    "description": "Beamer alertblock"
+  },
+  "HCMUT figure": {
+    "prefix": "hb-figure",
+    "body": [
+      "<Figure src=\"${1:/images/figure.png}\" n=\"${2:1}\" caption=\"${3:Mô tả hình}\" />"
+    ],
+    "description": "Figure có caption và placeholder khi thiếu ảnh"
+  },
+  "HCMUT two columns": {
+    "prefix": "hb-columns",
+    "body": [
+      "---",
+      "layout: two-cols",
+      "ratio: ${1|1:1,1:2,2:1|}",
+      "align: top",
+      "---",
+      "",
+      "# ${2:Tiêu đề}",
+      "",
+      "::left::",
+      "${3:Nội dung trái}",
+      "",
+      "::right::",
+      "${4:Nội dung phải}"
+    ],
+    "description": "Slide hai cột HCMUT"
+  }
+}

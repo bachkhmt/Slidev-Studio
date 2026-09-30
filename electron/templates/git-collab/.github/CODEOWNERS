@@ -1,0 +1,8 @@
+* @coordinator-user
+/sections/01-intro.md @member-a @coordinator-user
+/sections-assets/01-intro/ @member-a @coordinator-user
+/sections/02-analysis.md @member-b @coordinator-user
+/sections-assets/02-analysis/ @member-b @coordinator-user
+/sections/03-demo.md @member-c @coordinator-user
+/sections-assets/03-demo/ @member-c @coordinator-user
+/.github/ @coordinator-user

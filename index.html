@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Slidev Studio</title>
+    <script>
+      try {
+        const cached = JSON.parse(localStorage.getItem('studio-theme-cache') || 'null')
+        if (cached && cached.vars) {
+          for (const [name, value] of Object.entries(cached.vars)) document.documentElement.style.setProperty(name, value)
+          document.documentElement.dataset.theme = cached.id || 'studio-dark'
+          document.documentElement.style.colorScheme = cached.kind || 'dark'
+        }
+      } catch {}
+    </script>
+  </head>
+  <body class="bg-slate-950 text-slate-100 antialiased h-screen overflow-hidden select-none">
+    <div id="root" class="h-full w-full"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

@@ -1,0 +1,30 @@
+name: Review slide contribution
+on: pull_request
+permissions:
+  contents: read
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check assigned files using trusted base policy
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+        run: |
+          mkdir -p /tmp/slidev-policy
+          cd /tmp/slidev-policy
+          npm install --ignore-scripts --no-package-lock yaml@2.9.1
+          cd "$GITHUB_WORKSPACE"
+          git show "$BASE_SHA:.github/scripts/check-scope.mjs" > /tmp/slidev-policy/check-scope.mjs
+          node /tmp/slidev-policy/check-scope.mjs
+      - name: Install dependencies
+        run: npm install
+      - name: Build presentation
+        run: npm run build

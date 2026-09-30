@@ -1,0 +1,35 @@
+diff --git a/node_modules/@shikijs/vitepress-twoslash/dist/client.mjs b/node_modules/@shikijs/vitepress-twoslash/dist/client.mjs
+--- a/node_modules/@shikijs/vitepress-twoslash/dist/client.mjs
++++ b/node_modules/@shikijs/vitepress-twoslash/dist/client.mjs
+@@ -23,18 +23,19 @@
+ 			const _component = app.component;
+ 			app.component = function(...rest) {
+ 				const comp = _component.apply(this, rest);
+-				if (rest.length >= 2 && rest[0] === "VMenu") try {
+-					const PopperTs = rest[1].components.Popper.extends;
+-					const _show = PopperTs.methods.show;
+-					PopperTs.methods.show = function(...args) {
+-						if (!isDragging) return _show.apply(this, args);
+-					};
+-					const _hide = PopperTs.methods.hide;
+-					PopperTs.methods.hide = function(...args) {
+-						if (!isDragging) return _hide.apply(this, args);
+-					};
+-				} catch (e) {
+-					console.error("Failed to patch FloatingVue", e);
++				if (rest.length >= 2 && rest[0] === "VMenu") {
++					const PopperTs = rest[1].components?.Popper?.extends;
++					const methods = PopperTs?.methods;
++					if (methods?.show && methods?.hide) {
++						const _show = methods.show;
++						methods.show = function(...args) {
++							if (!isDragging) return _show.apply(this, args);
++						};
++						const _hide = methods.hide;
++						methods.hide = function(...args) {
++							if (!isDragging) return _hide.apply(this, args);
++						};
++					}
+ 				}
+ 				return comp;
+ 			};

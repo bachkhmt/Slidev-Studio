@@ -1,0 +1,21 @@
+{
+  "name": "{{SLUG}}",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "slidev slides.md --open",
+    "build": "slidev build slides.md",
+    "export": "slidev export slides.md",
+    "postinstall": "patch-package"
+  },
+  "dependencies": {
+    "@slidev/cli": "^53.0.0",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "patch-package": "8.0.1"
+  },
+  "overrides": {
+    "@shikijs/vitepress-twoslash": "4.4.3"
+  }
+}

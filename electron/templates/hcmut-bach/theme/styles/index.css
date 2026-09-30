@@ -1,0 +1,122 @@
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('../assets/fonts/source-sans-3-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Source Sans 3';
+  font-style: normal;
+  font-weight: 200 900;
+  font-display: swap;
+  src: url('../assets/fonts/source-sans-3-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('../assets/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('../assets/fonts/jetbrains-mono-latin-ext.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+/* HCMUT-Bach — màu lấy từ SudaBeamer.sty: xanhnhat (0.078,0.533,0.859), xanhdam (0.012,0.169,0.569) */
+:root {
+  --hb-light: #1488db;
+  --hb-dark: #032b91;
+  --hb-ink: #111;
+  --hb-tint: #e9f0fa;
+  --hb-alert: #bf0000;
+  --hb-alert-tint: #fbeeee;
+  --hb-pad: 40px;
+  --slidev-theme-primary: #1488db;
+}
+
+.slidev-layout.hb {
+  --hb-content-size: 21px;
+  color: var(--hb-ink);
+  font-family: 'Source Sans 3', Arial, sans-serif;
+  font-size: var(--hb-content-size);
+  line-height: 1.45;
+}
+.slidev-layout.hb code, .slidev-layout.hb pre { font-family: 'JetBrains Mono', monospace; }
+
+/* ---------- vùng nội dung + \frametitle ---------- */
+.hb .hb-content { flex: 1 1 auto; min-height: 0; display: flex; flex-direction: column; padding: 0 var(--hb-pad); }
+/* căn giữa dọc (mặc định của frame Beamer) hay sát trên ([t]) */
+.hb .hb-content::after { content: ''; flex: 1; }
+.hb .hb-content.is-center::before { content: ''; flex: 1; }
+
+.hb .hb-content > h1 {
+  order: -2;
+  margin: 0 calc(-1 * var(--hb-pad)) 22px;
+  padding: 9px var(--hb-pad) 11px;
+  background: var(--hb-light);
+  color: #fff;
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+.hb .hb-content.has-sub > h1 { margin-bottom: 0; padding-bottom: 0; }
+.hb .hb-subtitle {
+  order: -1;
+  margin: 0 calc(-1 * var(--hb-pad)) 22px;
+  padding: 2px var(--hb-pad) 9px;
+  background: var(--hb-light);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 18px;
+}
+
+.hb h2 { color: var(--hb-dark); font-size: 26px; font-weight: 700; margin: 0.4em 0; }
+.hb h3 { color: var(--hb-dark); font-size: 23px; font-weight: 600; margin: 0.4em 0; }
+.hb p { margin: 0.5em 0; line-height: 1.45; }
+.hb a { color: var(--hb-light); border-bottom: none; }
+
+/* ---------- danh sách kiểu \useinnertheme{circles} ---------- */
+.hb ul, .hb ol { list-style: none; padding-left: 1.5em; margin: 0.35em 0; }
+.hb li { position: relative; margin: 0.28em 0; line-height: 1.45; }
+.hb ul > li::before {
+  content: ''; position: absolute; left: -1.05em; top: 0.58em;
+  width: 0.46em; height: 0.46em; border-radius: 50%; background: var(--hb-dark);
+}
+.hb li.slidev-vclick-hidden::before { opacity: 0; }
+.hb li.slidev-vclick-target::before { transition: opacity 0.1s ease; }
+.hb ul ul > li::before { width: 0.38em; height: 0.38em; left: -1em; top: 0.62em; }
+.hb ul ul ul > li::before { width: 0.3em; height: 0.3em; left: -0.95em; top: 0.66em; }
+.hb ol { counter-reset: hb-n; padding-left: 1.9em; }
+.hb ol > li { counter-increment: hb-n; }
+.hb ol > li::before {
+  content: counter(hb-n); position: absolute; left: -1.75em; top: 0.1em;
+  width: 1.35em; height: 1.35em; border-radius: 50%;
+  background: var(--hb-dark); color: #fff;
+  font-size: 0.72em; font-weight: 600; line-height: 1.35em; text-align: center;
+}
+
+/* ---------- bảng (\hline + | như bảng gốc, nền trắng để không lộ ảnh nền) ---------- */
+.hb table { width: 100%; border-collapse: collapse; background: #fff; font-size: 0.8em; line-height: 1.3; }
+.hb table.hb-table { table-layout: fixed; }
+.hb .hb-table--compact { font-size: 0.7em; }
+.hb .hb-table--wide { width: calc(100% + 2 * var(--hb-pad)); margin-left: calc(-1 * var(--hb-pad)); }
+.hb .hb-table th:first-child, .hb .hb-table td:first-child { text-align: left; }
+.hb th, .hb td { border: 1px solid #222; padding: 4px 7px; vertical-align: middle; text-align: left; }
+.hb th { font-weight: 700; text-align: center; }
+.hb tr { border-bottom: none; }
+
+/* ---------- code, trích dẫn, công thức ---------- */
+.hb :not(pre) > code { color: var(--hb-dark); font-size: 0.9em; }
+.hb blockquote { margin: 0.6em 0; padding: 6px 12px; background: var(--hb-tint); color: var(--hb-ink); border-left: 4px solid var(--hb-light); border-radius: 0 3px 3px 0; font-size: 0.95em; }
+.hb .katex-display { margin: 0.5em 0; }
+.hb figure { margin: 0; text-align: center; }
+.hb figcaption { font-size: 0.8em; color: #444; }
+.hb img { max-width: 100%; }

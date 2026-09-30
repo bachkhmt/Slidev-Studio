@@ -1,0 +1,11 @@
+{
+  "title": "Báo cáo nhóm",
+  "coordinator": "coordinator-user",
+  "mainBranch": "main",
+  "branchPattern": "feature/{owner}-{sectionId}",
+  "sections": [
+    { "id": "01-intro", "file": "sections/01-intro.md", "owner": "member-a" },
+    { "id": "02-analysis", "file": "sections/02-analysis.md", "owner": "member-b" },
+    { "id": "03-demo", "file": "sections/03-demo.md", "owner": "member-c" }
+  ]
+}

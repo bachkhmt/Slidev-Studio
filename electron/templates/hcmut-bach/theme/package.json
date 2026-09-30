@@ -1,0 +1,28 @@
+{
+  "name": "slidev-theme-hcmut-bach",
+  "version": "1.1.1",
+  "description": "Slidev theme học thuật HCMUT dựa trên Beamer",
+  "license": "MIT",
+  "engines": {
+    "slidev": ">=52.0.0"
+  },
+  "slidev": {
+    "colorSchema": "light",
+    "defaults": {
+      "aspectRatio": "4/3",
+      "canvasWidth": 800,
+      "transition": "fade",
+      "fonts": {
+        "sans": "Source Sans 3",
+        "mono": "JetBrains Mono",
+        "weights": "400,600,700",
+        "provider": "none",
+        "local": "Source Sans 3,JetBrains Mono"
+      }
+    }
+  },
+  "peerDependencies": {
+    "@slidev/client": "^53.0.0",
+    "vue": "^3.5.0"
+  }
+}

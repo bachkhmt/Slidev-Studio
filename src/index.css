@@ -1,0 +1,86 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --slate-50: 248 250 252;
+    --slate-100: 241 245 249;
+    --slate-200: 226 232 240;
+    --slate-300: 203 213 225;
+    --slate-400: 148 163 184;
+    --slate-500: 100 116 139;
+    --slate-600: 71 85 105;
+    --slate-700: 51 65 85;
+    --slate-800: 30 41 59;
+    --slate-900: 15 23 42;
+    --slate-950: 2 6 23;
+    --accent-50: 239 246 255;
+    --accent-100: 219 234 254;
+    --accent-200: 191 219 254;
+    --accent-300: 147 197 253;
+    --accent-400: 96 165 250;
+    --accent-500: 59 130 246;
+    --accent-600: 37 99 235;
+    --accent-700: 29 78 216;
+    --accent-800: 30 64 175;
+    --accent-900: 30 58 138;
+    --accent-950: 23 37 84;
+    --app-bg: #020617;
+    --app-surface: #0f172a;
+    --app-border: #1e293b;
+    --app-fg: #f1f5f9;
+    --chrome-bg: #0f172a;
+    --chrome-fg: #f1f5f9;
+  }
+
+  @font-face {
+    font-family: 'Source Sans 3';
+    src: url('/fonts/source-sans-3-latin.woff2') format('woff2');
+    font-style: normal;
+    font-weight: 200 900;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: 'Source Sans 3';
+    src: url('/fonts/source-sans-3-latin-ext.woff2') format('woff2');
+    font-style: normal;
+    font-weight: 200 900;
+    font-display: swap;
+    unicode-range: U+0100-024F, U+1E00-1EFF;
+  }
+  * {
+    box-sizing: border-box;
+  }
+
+  body {
+    background: var(--app-bg, #020617);
+    font-family: var(--ui-font, ui-sans-serif, system-ui, sans-serif);
+  }
+
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: rgb(var(--slate-900, 15 23 42));
+  }
+  ::-webkit-scrollbar-thumb {
+    background: rgb(var(--slate-700, 51 65 85));
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: rgb(var(--accent-500, 59 130 246));
+  }
+
+  .app-chrome {
+    background-color: var(--chrome-bg, var(--app-surface, #0f172a)) !important;
+    color: var(--chrome-fg, var(--app-fg, #f1f5f9));
+    border-color: color-mix(in srgb, var(--chrome-fg, #f1f5f9) 16%, transparent) !important;
+  }
+  .app-chrome [class*="bg-slate-"] { background-color: color-mix(in srgb, var(--chrome-fg, #f1f5f9) 9%, var(--chrome-bg, #0f172a)) !important; }
+  .app-chrome [class*="border-slate-"] { border-color: color-mix(in srgb, var(--chrome-fg, #f1f5f9) 16%, transparent) !important; }
+  .app-chrome [class*="text-slate-"]:not([class*="text-blue-"]):not([class*="text-emerald-"]):not([class*="text-rose-"]):not([class*="text-amber-"]) { color: var(--chrome-fg, #f1f5f9) !important; }
+  .jump-flash { animation: jump-flash var(--jump-flash-ms, 1000ms) ease-out; }
+  @keyframes jump-flash { 0%, 45% { background-color: color-mix(in srgb, var(--accent-500, #3b82f6) 35%, transparent); } 100% { background-color: transparent; } }
+}
