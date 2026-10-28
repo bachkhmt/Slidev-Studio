@@ -1,4 +1,15 @@
 node_modules
+.cache
+test-results
+playwright-report
+reports/exports
+reports/unit-tests.json
+reports/e2e-tests.json
+reports/e2e-console.log
+reports/packaged-smoke.json
+reports/packaged-app.png
+reports/export-smoke.json
+reports/release.json
 out
 dist
 .DS_Store

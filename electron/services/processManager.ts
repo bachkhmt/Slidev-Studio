@@ -4,6 +4,7 @@ import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
 import { randomBytes } from 'crypto'
+import { execFileSync } from 'child_process'
 import { BrowserWindow } from 'electron'
 import { portAllocator } from './portFinder'
 import { waitForReady } from './waitForReady'
@@ -17,6 +18,7 @@ import { resolveSlidevRunner } from '../utils/slidevRunner'
 import { CompileErrorAggregator, type CompileEvent } from './compileErrorParser'
 import { checkThemeInstalled, isEngineCompatible, readTheme, themePackageName } from '../utils/themeResolver'
 import { patchTwoslashFloatingVue } from '../utils/slidevCompatibility'
+import { StartQueue } from './startQueue'
 
 export type ProcessStatusType = 'idle' | 'installing' | 'starting' | 'running' | 'error' | 'stopped'
 export interface ProcessLogLine {
@@ -47,7 +49,7 @@ type StartResult = { port: number; url: string; lanUrl?: string }
 type ExitResult = { code: number | null; signal: NodeJS.Signals | null }
 
 function waitForChildExit(child: ExecaChildProcess, timeoutMs: number): Promise<boolean> {
-  if (child.exitCode !== null && child.exitCode !== undefined) return Promise.resolve(true)
+  if ((child.exitCode !== null && child.exitCode !== undefined) || child.signalCode) return Promise.resolve(true)
   return new Promise((resolve) => {
     let done = false
     const finish = (exited: boolean) => {
@@ -75,6 +77,7 @@ function sendTreeSignal(pid: number, signal: NodeJS.Signals): Promise<void> {
 }
 
 export class ProcessManager {
+  private startQueue = new StartQueue()
   private instances = new Map<string, ProcessInstance>()
   private pendingStarts = new Map<string, { entryFile: string; promise: Promise<StartResult> }>()
   private windows: BrowserWindow[] = []
@@ -84,12 +87,17 @@ export class ProcessManager {
   private logSequence = new Map<string, number>()
   private compileErrors = new Map<string, CompileErrorAggregator>()
   private compileErrorActive = new Set<string>()
-  private pendingTrust = new Map<string, (result: { approved: boolean; ignoreScripts: boolean; choice: 'once' | 'remember' | 'cancel' }) => void>()
+  private pendingTrust = new Map<
+    string,
+    (result: { approved: boolean; ignoreScripts: boolean; choice: 'once' | 'remember' | 'cancel' }) => void
+  >()
 
   public registerWindow(win: BrowserWindow): void {
     if (!this.windows.includes(win)) {
       this.windows.push(win)
-      win.on('closed', () => { this.windows = this.windows.filter((window) => window !== win) })
+      win.on('closed', () => {
+        this.windows = this.windows.filter((window) => window !== win)
+      })
     }
   }
 
@@ -152,7 +160,11 @@ export class ProcessManager {
     }
   }
 
-  private requestInstallTrust(projectId: string, command: string, signal?: AbortSignal): Promise<{ approved: boolean; ignoreScripts: boolean }> {
+  private requestInstallTrust(
+    projectId: string,
+    command: string,
+    signal?: AbortSignal
+  ): Promise<{ approved: boolean; ignoreScripts: boolean }> {
     const project = projectStore.getProject(projectId)
     if (!project || project.trusted !== false) return Promise.resolve({ approved: true, ignoreScripts: false })
     if (signal?.aborted) return Promise.resolve({ approved: false, ignoreScripts: true })
@@ -184,7 +196,13 @@ export class ProcessManager {
     return true
   }
 
-  private async runInstall(projectId: string, instance: ProcessInstance, args: string[], description: string, trustCommand: string): Promise<void> {
+  private async runInstall(
+    projectId: string,
+    instance: ProcessInstance,
+    args: string[],
+    description: string,
+    trustCommand: string
+  ): Promise<void> {
     const settings = projectStore.getSettings()
     const project = projectStore.getProject(projectId)
     let ignoreScripts = false
@@ -195,33 +213,43 @@ export class ProcessManager {
     }
     instance.status = 'installing'
     this.emitStatus(instance)
-    await installQueue.run(`${projectId}:install`, async () => {
-      if (instance.abortController.signal.aborted) throw Object.assign(new Error('Đã huỷ tác vụ cài đặt'), { code: 'STOPPED_BY_USER' })
-      const installArgs = [...args, ...(settings.server.registry && !args.includes('--registry') ? ['--registry', settings.server.registry] : []), ...(ignoreScripts ? ['--ignore-scripts'] : [])]
-      const child = execa(settings.server.packageManager, installArgs, {
-        cwd: instance.projectPath,
-        env: this.getEnv(),
-        buffer: false,
-        stdin: 'ignore',
-        reject: false,
-        signal: instance.abortController.signal
-      })
-      instance.installProcess = child
-      instance.pid = child.pid
-      child.once('exit', () => {
-        if (instance.installProcess === child) {
-          instance.installProcess = undefined
-          instance.pid = undefined
-        }
-      })
-      child.stdout?.on('data', (data) => this.emitLog(projectId, data.toString(), 'stdout'))
-      child.stderr?.on('data', (data) => this.emitLog(projectId, data.toString(), 'stderr'))
-      const result = await child
-      instance.installProcess = undefined
-      instance.pid = undefined
-      if (instance.abortController.signal.aborted) throw Object.assign(new Error('Đã huỷ tác vụ cài đặt'), { code: 'STOPPED_BY_USER' })
-      if (result.exitCode !== 0) throw new Error(`${description} thất bại với mã lỗi ${result.exitCode}`)
-    }, instance.abortController.signal)
+    await installQueue.run(
+      `${projectId}:install`,
+      async () => {
+        if (instance.abortController.signal.aborted)
+          throw Object.assign(new Error('Đã huỷ tác vụ cài đặt'), { code: 'STOPPED_BY_USER' })
+        const installArgs = [
+          ...args,
+          ...(settings.server.registry && !args.includes('--registry') ? ['--registry', settings.server.registry] : []),
+          ...(ignoreScripts ? ['--ignore-scripts'] : [])
+        ]
+        const child = execa(settings.server.packageManager, installArgs, {
+          cwd: instance.projectPath,
+          env: this.getEnv(),
+          buffer: false,
+          stdin: 'ignore',
+          reject: false,
+          signal: instance.abortController.signal
+        })
+        instance.installProcess = child
+        instance.pid = child.pid
+        child.once('exit', () => {
+          if (instance.installProcess === child) {
+            instance.installProcess = undefined
+            instance.pid = undefined
+          }
+        })
+        child.stdout?.on('data', (data) => this.emitLog(projectId, data.toString(), 'stdout'))
+        child.stderr?.on('data', (data) => this.emitLog(projectId, data.toString(), 'stderr'))
+        const result = await child
+        instance.installProcess = undefined
+        instance.pid = undefined
+        if (instance.abortController.signal.aborted)
+          throw Object.assign(new Error('Đã huỷ tác vụ cài đặt'), { code: 'STOPPED_BY_USER' })
+        if (result.exitCode !== 0) throw new Error(`${description} thất bại với mã lỗi ${result.exitCode}`)
+      },
+      instance.abortController.signal
+    )
     this.emitLog(projectId, `[Slidev Studio] ${description} hoàn tất.`)
   }
 
@@ -244,10 +272,13 @@ export class ProcessManager {
     if (!theme) return
     const resolved = themePackageName(theme)
     let result = checkThemeInstalled(instance.projectPath, resolved)
-    if (!result.ok && result.reason === 'path-missing') throw new Error(`Không tìm thấy theme theo đường dẫn ${resolved.kind === 'path' ? resolved.path : theme}.`)
+    if (!result.ok && result.reason === 'path-missing')
+      throw new Error(`Không tìm thấy theme theo đường dẫn ${resolved.kind === 'path' ? resolved.path : theme}.`)
     if (!result.ok && result.reason === 'missing') {
       if (!projectStore.getSettings().server.autoInstallDeps) {
-        throw new Error(`Theme ${resolved.kind === 'package' ? resolved.name : theme} chưa được cài. Hãy chạy lệnh cài package theme trong thư mục dự án.`)
+        throw new Error(
+          `Theme ${resolved.kind === 'package' ? resolved.name : theme} chưa được cài. Hãy chạy lệnh cài package theme trong thư mục dự án.`
+        )
       }
       const name = resolved.kind === 'package' ? resolved.name : theme
       const manager = projectStore.getSettings().server.packageManager
@@ -260,11 +291,15 @@ export class ProcessManager {
     const cliPath = path.join(instance.projectPath, 'node_modules', '@slidev', 'cli', 'package.json')
     const cliVersion = fs.existsSync(cliPath) ? String((await fs.readJson(cliPath)).version || '') : ''
     if (result.ok && !isEngineCompatible(result.engine, cliVersion)) {
-      throw new Error(`Theme ${resolved.kind === 'package' ? resolved.name : theme}@${result.version || 'unknown'} yêu cầu Slidev ${result.engine}, đang cài CLI ${cliVersion || 'không xác định'}. Hãy nâng @slidev/cli hoặc ghim theme phiên bản cũ hơn.`)
+      throw new Error(
+        `Theme ${resolved.kind === 'package' ? resolved.name : theme}@${result.version || 'unknown'} yêu cầu Slidev ${result.engine}, đang cài CLI ${cliVersion || 'không xác định'}. Hãy nâng @slidev/cli hoặc ghim theme phiên bản cũ hơn.`
+      )
     }
   }
 
-  public getStatus(projectId: string): Omit<ProcessInstance, 'childProcess' | 'installProcess' | 'abortController'> | null {
+  public getStatus(
+    projectId: string
+  ): Omit<ProcessInstance, 'childProcess' | 'installProcess' | 'abortController'> | null {
     const instance = this.instances.get(projectId)
     if (!instance) return null
     const { childProcess: _child, installProcess: _install, abortController: _abort, ...status } = instance
@@ -275,18 +310,39 @@ export class ProcessManager {
     return [...(this.instances.get(projectId)?.logs || [])]
   }
 
+  public release(projectId: string): void {
+    const instance = this.instances.get(projectId)
+    if (instance?.pid || this.pendingStarts.has(projectId)) return
+    this.instances.delete(projectId)
+    this.compileErrors.delete(projectId)
+    this.compileErrorActive.delete(projectId)
+    clearTimeout(this.logFlushTimers.get(projectId))
+    this.logFlushTimers.delete(projectId)
+    this.pendingLogBatches.delete(projectId)
+    this.logSequence.delete(projectId)
+  }
+
+  public prioritize(projectId: string): void {
+    this.startQueue.prioritize(projectId)
+  }
+
   private getEnv(): NodeJS.ProcessEnv {
     return buildEnv(projectStore.getSettings())
   }
 
-  public start(projectId: string, projectPath: string, entryFile: string, options: { force?: boolean } = {}): Promise<StartResult> {
+  public start(
+    projectId: string,
+    projectPath: string,
+    entryFile: string,
+    options: { force?: boolean } = {}
+  ): Promise<StartResult> {
     const pending = this.pendingStarts.get(projectId)
     if (pending) {
       if (!options.force && pending.entryFile === entryFile) return pending.promise
       return pending.promise.catch(() => undefined).then(() => this.start(projectId, projectPath, entryFile, options))
     }
 
-    const promise = this.startInternal(projectId, projectPath, entryFile, options)
+    const promise = this.startQueue.run(projectId, () => this.startInternal(projectId, projectPath, entryFile, options))
     this.pendingStarts.set(projectId, { entryFile, promise })
     const clear = () => {
       if (this.pendingStarts.get(projectId)?.promise === promise) this.pendingStarts.delete(projectId)
@@ -295,9 +351,20 @@ export class ProcessManager {
     return promise
   }
 
-  private async startInternal(projectId: string, projectPath: string, entryFile: string, options: { force?: boolean } = {}): Promise<StartResult> {
+  private async startInternal(
+    projectId: string,
+    projectPath: string,
+    entryFile: string,
+    options: { force?: boolean } = {}
+  ): Promise<StartResult> {
     const existing = this.instances.get(projectId)
-    if (!options.force && existing?.status === 'running' && existing.entryFile === entryFile && existing.port && existing.url) {
+    if (
+      !options.force &&
+      existing?.status === 'running' &&
+      existing.entryFile === entryFile &&
+      existing.port &&
+      existing.url
+    ) {
       return { port: existing.port, url: existing.url, lanUrl: existing.lanUrl }
     }
     if (existing) await this.stop(projectId, 'restart-before-start')
@@ -317,21 +384,42 @@ export class ProcessManager {
     const generation = instance.generation
     this.emitStatus(instance)
     this.emitLog(projectId, `[Slidev Studio] Chuẩn bị khởi chạy slidev cho "${entryFile}"...`)
-    diag('start', { projectId, projectPath, entryFile, generation, caller: new Error().stack?.split('\n').slice(2, 5).join('\n') })
+    diag('start', {
+      projectId,
+      projectPath,
+      entryFile,
+      generation,
+      caller: new Error().stack?.split('\n').slice(2, 5).join('\n')
+    })
 
     const settings = projectStore.getSettings()
     const server = settings.server
     try {
-      const localBin = path.join(projectPath, 'node_modules', '.bin', process.platform === 'win32' ? 'slidev.cmd' : 'slidev')
+      const localBin = path.join(
+        projectPath,
+        'node_modules',
+        '.bin',
+        process.platform === 'win32' ? 'slidev.cmd' : 'slidev'
+      )
       const cliPackage = path.join(projectPath, 'node_modules', '@slidev', 'cli', 'package.json')
       const dependenciesInstalled = fs.existsSync(localBin) || fs.existsSync(cliPackage)
       if (!dependenciesInstalled) {
         if (!server.autoInstallDeps) {
-          throw new Error('Dự án chưa cài Slidev CLI. Bật tự động cài dependencies hoặc chạy package manager install rồi thử lại.')
+          throw new Error(
+            'Dự án chưa cài Slidev CLI. Bật tự động cài dependencies hoặc chạy package manager install rồi thử lại.'
+          )
         }
         const queuedAhead = installQueue.pendingCount()
-        if (queuedAhead) this.emitLog(projectId, `[Slidev Studio] Đang xếp hàng cài dependencies (còn ${queuedAhead} tác vụ phía trước)...`)
-        else this.emitLog(projectId, `[Slidev Studio] Không tìm thấy Slidev trong node_modules. Đang chạy "${server.packageManager} install"...`)
+        if (queuedAhead)
+          this.emitLog(
+            projectId,
+            `[Slidev Studio] Đang xếp hàng cài dependencies (còn ${queuedAhead} tác vụ phía trước)...`
+          )
+        else
+          this.emitLog(
+            projectId,
+            `[Slidev Studio] Không tìm thấy Slidev trong node_modules. Đang chạy "${server.packageManager} install"...`
+          )
         await this.runInstall(projectId, instance, ['install'], 'Cài dependencies', `${server.packageManager} install`)
       }
 
@@ -341,12 +429,18 @@ export class ProcessManager {
       if (twoslashPatch === 'patched') {
         this.emitLog(projectId, '[Slidev Studio] Đã áp dụng bản vá tương thích FloatingVue cho Twoslash.')
       } else if (twoslashPatch === 'unsupported') {
-        this.emitLog(projectId, '[Cảnh báo] Có phiên bản Twoslash không khớp bản vá tương thích FloatingVue của Studio.', 'stderr')
+        this.emitLog(
+          projectId,
+          '[Cảnh báo] Có phiên bản Twoslash không khớp bản vá tương thích FloatingVue của Studio.',
+          'stderr'
+        )
       }
 
       const runner = resolveSlidevRunner(projectPath)
       if (!runner) {
-        throw new Error('Không tìm thấy lệnh Slidev trong node_modules/.bin. Hãy cài lại dependencies của dự án; Studio không tự tải một bản CLI khác.')
+        throw new Error(
+          'Không tìm thấy lệnh Slidev trong node_modules/.bin. Hãy cài lại dependencies của dự án; Studio không tự tải một bản CLI khác.'
+        )
       }
 
       const preferredPort = projectStore.getProject(projectId)?.preferredPort || server.defaultPort
@@ -365,21 +459,33 @@ export class ProcessManager {
         instance.status = 'starting'
         instance.error = undefined
         this.emitStatus(instance)
-        if (port !== preferredPort) this.emitLog(projectId, `[Cảnh báo] Cổng ưu tiên ${preferredPort} đang bận; dự án dùng cổng ${port}.`, 'stderr')
+        if (port !== preferredPort)
+          this.emitLog(
+            projectId,
+            `[Cảnh báo] Cổng ưu tiên ${preferredPort} đang bận; dự án dùng cổng ${port}.`,
+            'stderr'
+          )
         this.emitLog(projectId, `[Slidev Studio] Đã giữ cổng ${port}. Đang khởi chạy tiến trình Slidev...`)
 
         const args = [
           ...runner.prefixArgs,
-          ...this.splitArgs(server.extraArgs), entryFile, '--port', String(port),
+          ...this.splitArgs(server.extraArgs),
+          entryFile,
+          '--port',
+          String(port),
           ...(server.openExternalBrowser ? ['--open'] : []),
           ...(server.bindMode === 'lan' ? [`--remote=${remotePassword}`, '--bind=0.0.0.0'] : []),
           ...(options.force ? ['--force'] : [])
         ]
-        this.emitLog(projectId, `[Slidev Studio] Thực thi: ${runner.command} ${args.map((arg) => arg.startsWith('--remote=') ? '--remote=••••' : arg).join(' ')}`)
+        this.emitLog(
+          projectId,
+          `[Slidev Studio] Thực thi: ${runner.command} ${args.map((arg) => (arg.startsWith('--remote=') ? '--remote=••••' : arg)).join(' ')}`
+        )
         const child = execa(runner.command, args, {
           cwd: projectPath,
           env: this.getEnv(),
           detached: server.keepServersOnQuit,
+          cleanup: !server.keepServersOnQuit,
           buffer: false,
           stdin: 'ignore',
           reject: false,
@@ -402,21 +508,40 @@ export class ProcessManager {
             if (!line.trim()) continue
             output = `${output}${line}\n`.slice(-12000)
             this.emitLog(projectId, line, type)
-            if (type === 'stdout' && /hmr update|page reload|hmr invalidate|program reload|server restarted/i.test(line) && generation === instance.generation) instance.error = undefined
+            if (
+              type === 'stdout' &&
+              /hmr update|page reload|hmr invalidate|program reload|server restarted/i.test(line) &&
+              generation === instance.generation
+            )
+              instance.error = undefined
           }
         }
         let exitedResolve!: (result: ExitResult) => void
-        const exited = new Promise<ExitResult>((resolve) => { exitedResolve = resolve })
+        const exited = new Promise<ExitResult>((resolve) => {
+          exitedResolve = resolve
+        })
         child.stdout?.on('data', (data) => consumeOutput('stdout', data))
         child.stderr?.on('data', (data) => consumeOutput('stderr', data))
-        child.on('error', (error) => { exitedResolve({ code: 1, signal: null }); lastError = error })
+        child.on('error', (error) => {
+          exitedResolve({ code: 1, signal: null })
+          lastError = error
+        })
         child.once('exit', (code, signal) => {
           if (stdoutBuffer.trim()) consumeOutput('stdout', '\n')
           if (stderrBuffer.trim()) consumeOutput('stderr', '\n')
           const aggregator = this.compileErrors.get(projectId)
           if (aggregator) this.emitCompileEvents(projectId, aggregator.flush(), instance)
           exitedResolve({ code, signal })
-          diag('child-exit', { projectId, pid: childPid, ppid: process.pid, pgid: server.keepServersOnQuit ? childPid : null, port, code, signal, generation })
+          diag('child-exit', {
+            projectId,
+            pid: childPid,
+            ppid: process.pid,
+            pgid: server.keepServersOnQuit ? childPid : null,
+            port,
+            code,
+            signal,
+            generation
+          })
           if (childPid) pidRegistry.remove(childPid)
           if (instance.childProcess === child) {
             instance.childProcess = undefined
@@ -433,17 +558,27 @@ export class ProcessManager {
             instance.error = code === 0 ? undefined : `Tiến trình kết thúc với mã lỗi ${code} (${signal})`
             this.emitStatus(instance)
           }
-          if (instance.status !== 'starting') this.emitLog(projectId, `[Slidev Studio] Tiến trình đã dừng (code: ${code}, signal: ${signal})`)
+          if (instance.status !== 'starting')
+            this.emitLog(projectId, `[Slidev Studio] Tiến trình đã dừng (code: ${code}, signal: ${signal})`)
         })
         if (childPid) {
-          pidRegistry.add({ pid: childPid, projectId, port, appPid: process.pid, startedAt: new Date().toISOString(), cmdHint: runner.command })
+          pidRegistry.add({
+            pid: childPid,
+            projectId,
+            port,
+            appPid: process.pid,
+            startedAt: new Date().toISOString(),
+            cmdHint: runner.command
+          })
         }
 
         try {
           await Promise.race([
             waitForReady(port, { signal: instance.abortController.signal, timeoutMs: server.startupTimeoutMs }),
             exited.then(({ code, signal }) => {
-              const error = new Error(`Slidev đã thoát trước khi sẵn sàng (code: ${code}, signal: ${signal}). ${output.slice(-1500)}`)
+              const error = new Error(
+                `Slidev đã thoát trước khi sẵn sàng (code: ${code}, signal: ${signal}). ${output.slice(-1500)}`
+              )
               Object.assign(error, { code: 'PROCESS_EXITED' })
               throw error
             })
@@ -462,7 +597,11 @@ export class ProcessManager {
           lastError = error as Error
           const portInUse = /port\s+\d+\s+is already in use/i.test(output)
           if (portInUse && !server.strictPort && attempt < 2 && !instance.abortController.signal.aborted) {
-            this.emitLog(projectId, `[Slidev Studio] Cổng ${port} vừa bị tiến trình khác chiếm. Đang thử cổng kế tiếp...`, 'stderr')
+            this.emitLog(
+              projectId,
+              `[Slidev Studio] Cổng ${port} vừa bị tiến trình khác chiếm. Đang thử cổng kế tiếp...`,
+              'stderr'
+            )
             if (childPid) await sendTreeSignal(childPid, 'SIGTERM')
             await waitForChildExit(child, 3000)
             portAllocator.release(port, projectId)
@@ -514,10 +653,19 @@ export class ProcessManager {
   }
 
   public async stop(projectId: string, reason = 'user'): Promise<boolean> {
+    this.startQueue.cancel(projectId)
     const instance = this.instances.get(projectId)
     if (!instance) return true
     const pid = instance.pid
-    diag('stop', { projectId, pid, ppid: process.pid, pgid: pid && projectStore.getSettings().server.keepServersOnQuit ? pid : null, port: instance.port, reason, caller: new Error().stack?.split('\n').slice(2, 6).join('\n') })
+    diag('stop', {
+      projectId,
+      pid,
+      ppid: process.pid,
+      pgid: pid && projectStore.getSettings().server.keepServersOnQuit ? pid : null,
+      port: instance.port,
+      reason,
+      caller: new Error().stack?.split('\n').slice(2, 6).join('\n')
+    })
     instance.status = 'stopped'
     instance.error = undefined
     const compileAggregator = this.compileErrors.get(projectId)
@@ -574,7 +722,12 @@ export class ProcessManager {
 
   private splitArgs(input: string): string[] {
     const matches = input.match(/(?:[^\s"']+|"[^"]*"|'[^']*')+/g) || []
-    return matches.map((value) => value.replace(/^(?:"([\s\S]*)"|'([\s\S]*)')$/, (_match, doubleQuoted, singleQuoted) => doubleQuoted ?? singleQuoted))
+    return matches.map((value) =>
+      value.replace(
+        /^(?:"([\s\S]*)"|'([\s\S]*)')$/,
+        (_match, doubleQuoted, singleQuoted) => doubleQuoted ?? singleQuoted
+      )
+    )
   }
 
   private getLanHost(): string {
@@ -585,6 +738,7 @@ export class ProcessManager {
   }
 
   public async stopAll(): Promise<void> {
+    for (const id of this.pendingStarts.keys()) this.startQueue.cancel(id)
     if (projectStore.getSettings().server.keepServersOnQuit) return
     await Promise.all([...this.instances.keys()].map((id) => this.stop(id, 'app-quit')))
     for (const projectId of [...this.logFlushTimers.keys()]) this.flushLogs(projectId)
@@ -596,7 +750,17 @@ export class ProcessManager {
     for (const instance of this.instances.values()) {
       instance.abortController.abort()
       if (instance.pid) {
-        try { process.kill(instance.pid, 'SIGKILL') } catch { /* Best-effort on process exit. */ }
+        try {
+          if (process.platform === 'win32')
+            execFileSync('taskkill', ['/pid', String(instance.pid), '/T', '/F'], {
+              windowsHide: true,
+              stdio: 'ignore',
+              timeout: 5000
+            })
+          else process.kill(instance.pid, 'SIGKILL')
+        } catch {
+          /* Best-effort on forced process exit. */
+        }
       }
     }
   }

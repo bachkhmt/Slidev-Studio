@@ -1,6 +1,18 @@
 import { contextBridge, ipcRenderer, webFrame } from 'electron'
 
 const api = {
+  lifecycle: {
+    onPrepareClose: (callback: (request: import('../shared/documents').PrepareCloseRequest) => void) => {
+      const listener = (_event: unknown, request: import('../shared/documents').PrepareCloseRequest) =>
+        callback(request)
+      ipcRenderer.on('lifecycle:prepareClose', listener)
+      return () => {
+        ipcRenderer.removeListener('lifecycle:prepareClose', listener)
+      }
+    },
+    prepared: (reply: import('../shared/documents').PrepareCloseReply) => ipcRenderer.send('lifecycle:prepared', reply),
+    confirmUnsaved: (files: string[], reason: string) => ipcRenderer.invoke('lifecycle:confirmUnsaved', files, reason)
+  },
   collab: {
     inspect: (id: string) => ipcRenderer.invoke('collab:inspect', id),
     selectSection: (id: string, section: string) => ipcRenderer.invoke('collab:selectSection', id, section),
@@ -8,10 +20,12 @@ const api = {
     sync: (id: string) => ipcRenderer.invoke('collab:sync', id),
     submit: (id: string) => ipcRenderer.invoke('collab:submit', id),
     previewEntry: (id: string, mode: string) => ipcRenderer.invoke('collab:previewEntry', id, mode),
-    resolveConflict: (id: string, file: string, choice: string) => ipcRenderer.invoke('collab:resolveConflict', id, file, choice),
+    resolveConflict: (id: string, file: string, choice: string) =>
+      ipcRenderer.invoke('collab:resolveConflict', id, file, choice),
     finishMerge: (id: string) => ipcRenderer.invoke('collab:finishMerge', id),
     abortMerge: (id: string) => ipcRenderer.invoke('collab:abortMerge', id),
-    exportMain: (id: string, format: string, options: any) => ipcRenderer.invoke('collab:exportMain', id, format, options),
+    exportMain: (id: string, format: string, options: any) =>
+      ipcRenderer.invoke('collab:exportMain', id, format, options),
     account: () => ipcRenderer.invoke('collab:account'),
     beginLogin: (clientId: string) => ipcRenderer.invoke('collab:beginLogin', clientId),
     pollLogin: () => ipcRenderer.invoke('collab:pollLogin'),
@@ -30,6 +44,8 @@ const api = {
     selectDirectory: (title?: string) => ipcRenderer.invoke('projects:selectDirectory', title)
   },
   process: {
+    release: (id: string) => ipcRenderer.invoke('process:release', id),
+    prioritize: (id: string) => ipcRenderer.invoke('process:prioritize', id),
     start: (projectId: string, projectPath: string, entryFile: string) =>
       ipcRenderer.invoke('process:start', projectId, projectPath, entryFile),
     stop: (projectId: string) => ipcRenderer.invoke('process:stop', projectId),
@@ -79,6 +95,8 @@ const api = {
       ipcRenderer.invoke('process:confirmTrust', requestId, choice, ignoreScripts)
   },
   fs: {
+    listDirectory: (path: string) => ipcRenderer.invoke('fs:listDirectory', path),
+    statFile: (path: string) => ipcRenderer.invoke('fs:statFile', path),
     readFile: (filePath: string) => ipcRenderer.invoke('fs:readFile', filePath),
     writeFile: (filePath: string, content: string) => ipcRenderer.invoke('fs:writeFile', filePath, content),
     listTree: (rootPath: string) => ipcRenderer.invoke('fs:listTree', rootPath),

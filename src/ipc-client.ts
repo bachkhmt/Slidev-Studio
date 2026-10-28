@@ -3,39 +3,79 @@ import { DEFAULT_SETTINGS } from '../shared/settings'
 
 // Safe fallback for window.api
 const api: ElectronAPI = (window as any).api || {
+  lifecycle: { onPrepareClose: () => () => {}, prepared: () => {}, confirmUnsaved: async () => 'cancel' },
   collab: {
     inspect: async () => null,
     account: async () => null,
     logout: async () => {},
     openPr: async () => {},
-    selectSection: async () => { throw new Error('API not available') },
-    saveDraft: async () => { throw new Error('API not available') },
-    sync: async () => { throw new Error('API not available') },
-    submit: async () => { throw new Error('API not available') },
-    previewEntry: async () => { throw new Error('API not available') },
-    resolveConflict: async () => { throw new Error('API not available') },
-    finishMerge: async () => { throw new Error('API not available') },
-    abortMerge: async () => { throw new Error('API not available') },
-    exportMain: async () => { throw new Error('API not available') },
-    beginLogin: async () => { throw new Error('API not available') },
-    pollLogin: async () => { throw new Error('API not available') }
+    selectSection: async () => {
+      throw new Error('API not available')
+    },
+    saveDraft: async () => {
+      throw new Error('API not available')
+    },
+    sync: async () => {
+      throw new Error('API not available')
+    },
+    submit: async () => {
+      throw new Error('API not available')
+    },
+    previewEntry: async () => {
+      throw new Error('API not available')
+    },
+    resolveConflict: async () => {
+      throw new Error('API not available')
+    },
+    finishMerge: async () => {
+      throw new Error('API not available')
+    },
+    abortMerge: async () => {
+      throw new Error('API not available')
+    },
+    exportMain: async () => {
+      throw new Error('API not available')
+    },
+    beginLogin: async () => {
+      throw new Error('API not available')
+    },
+    pollLogin: async () => {
+      throw new Error('API not available')
+    }
   },
   projects: {
     list: async () => [],
-    addFolder: async () => { throw new Error('API not available') },
+    addFolder: async () => {
+      throw new Error('API not available')
+    },
     remove: async () => false,
-    cloneFromGit: async () => { throw new Error('API not available') },
-    cloneProject: async () => { throw new Error('API not available') },
+    cloneFromGit: async () => {
+      throw new Error('API not available')
+    },
+    cloneProject: async () => {
+      throw new Error('API not available')
+    },
     updateProject: async () => undefined,
     getSettings: async () => DEFAULT_SETTINGS,
     updateSettings: async () => DEFAULT_SETTINGS,
     selectDirectory: async () => null
   },
   process: {
-    start: async () => ({ port: DEFAULT_SETTINGS.server.defaultPort, url: `http://localhost:${DEFAULT_SETTINGS.server.defaultPort}` }),
+    release: async () => {},
+    prioritize: async () => {},
+    start: async () => ({
+      port: DEFAULT_SETTINGS.server.defaultPort,
+      url: `http://localhost:${DEFAULT_SETTINGS.server.defaultPort}`
+    }),
     stop: async () => true,
-    restart: async () => ({ port: DEFAULT_SETTINGS.server.defaultPort, url: `http://localhost:${DEFAULT_SETTINGS.server.defaultPort}` }),
-    recompile: async () => ({ port: DEFAULT_SETTINGS.server.defaultPort, url: `http://localhost:${DEFAULT_SETTINGS.server.defaultPort}` }),
+    restart: async () => ({
+      port: DEFAULT_SETTINGS.server.defaultPort,
+      url: `http://localhost:${DEFAULT_SETTINGS.server.defaultPort}`
+    }),
+    recompile: async () => ({
+      port: DEFAULT_SETTINGS.server.defaultPort,
+      url: `http://localhost:${DEFAULT_SETTINGS.server.defaultPort}`
+    }),
     getStatus: async () => null,
     getLogs: async () => [],
     onStatusChange: () => () => {},
@@ -47,6 +87,8 @@ const api: ElectronAPI = (window as any).api || {
     confirmTrust: async () => false
   },
   fs: {
+    listDirectory: async () => [],
+    statFile: async () => ({ mtimeMs: 0, size: 0 }),
     readFile: async () => '',
     writeFile: async () => true,
     listTree: async () => [],
@@ -54,7 +96,9 @@ const api: ElectronAPI = (window as any).api || {
   },
   scaffold: {
     listTemplates: async () => [],
-    create: async () => { throw new Error('API not available') },
+    create: async () => {
+      throw new Error('API not available')
+    },
     onLog: () => () => {}
   },
   export: {

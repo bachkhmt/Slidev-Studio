@@ -1,4 +1,5 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect, useState, useMemo } from 'react'
+import { VirtualRows } from './VirtualRows'
 import { Terminal, Trash2, Copy, Check, ChevronDown } from 'lucide-react'
 
 export interface LogEntry {
@@ -19,11 +20,15 @@ export const ProcessConsole: React.FC<ProcessConsoleProps> = ({ logs, onClear, o
   const [autoScroll, setAutoScroll] = useState<boolean>(true)
   const [copied, setCopied] = useState<boolean>(false)
   const wasAtBottomRef = useRef(true)
-  const visibleLogs = logs.slice(-500)
+  const visibleLogs = useMemo(
+    () => logs.flatMap((log) => log.text.split('\n').map((text) => ({ ...log, text }))),
+    [logs]
+  )
 
   useEffect(() => {
     if (autoScroll && wasAtBottomRef.current && containerRef.current) {
-      containerRef.current.scrollTop = containerRef.current.scrollHeight
+      const viewport = containerRef.current.querySelector('[aria-label]') as HTMLElement | null
+      if (viewport) viewport.scrollTop = viewport.scrollHeight
     }
   }, [logs, autoScroll])
 
@@ -93,29 +98,27 @@ export const ProcessConsole: React.FC<ProcessConsoleProps> = ({ logs, onClear, o
       </div>
 
       {/* Log lines container */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-y-auto p-3 space-y-1 select-text"
-        onScroll={handleScroll}
-      >
+      <div ref={containerRef} className="flex-1 min-h-0 p-2 select-text" onScroll={handleScroll}>
         {logs.length === 0 ? (
           <div className="text-slate-600 italic">Chưa có log nào được ghi nhận.</div>
         ) : (
-          visibleLogs.map((log, index) => (
-            <div
-              key={log.seq ?? `${log.time || ''}-${index}-${log.text.slice(0, 24)}`}
-              className={`leading-relaxed break-all ${
-                log.type === 'stderr'
-                  ? 'text-rose-400'
-                  : log.text.includes('ready in') || log.text.includes('http://localhost')
-                  ? 'text-emerald-400 font-bold'
-                  : 'text-slate-300'
-              }`}
-            >
-              {log.time && <span className="text-slate-600 mr-2 select-none">[{log.time}]</span>}
-              {log.text}
-            </div>
-          ))
+          <VirtualRows
+            label="Nhật ký máy chủ"
+            onScrollPosition={(bottom) => {
+              wasAtBottomRef.current = bottom
+            }}
+            items={visibleLogs}
+            rowHeight={22}
+            width={Math.max(600, ...visibleLogs.map((l) => (l.text.length + 14) * 7))}
+            render={(log) => (
+              <div
+                className={`whitespace-pre px-1 leading-[22px] ${log.type === 'stderr' ? 'text-rose-400' : 'text-slate-300'}`}
+              >
+                {log.time && <span className="mr-2 text-slate-600">[{log.time}]</span>}
+                {log.text}
+              </div>
+            )}
+          />
         )}
       </div>
     </div>

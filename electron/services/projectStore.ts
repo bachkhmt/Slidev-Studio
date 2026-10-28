@@ -8,6 +8,7 @@ import { canonicalPath, samePath } from '../utils/path'
 import { validateGitUrl } from '../utils/gitUrl'
 import { validateSettingsImportFields } from '../utils/settingsImportValidation'
 import { portAllocator } from './portFinder'
+import { dataDir } from '../utils/dataDir'
 
 export interface ProjectItem {
   id: string
@@ -40,13 +41,16 @@ export class ProjectStore {
   private settingsSaveTimer: NodeJS.Timeout | null = null
 
   constructor() {
-    this.configDir = path.join(os.homedir(), '.slidev-studio')
+    this.configDir = dataDir()
     this.configPath = path.join(this.configDir, 'projects.json')
     this.data = {
       projects: [],
       settings: {
         ...structuredClone(DEFAULT_SETTINGS),
-        projects: { ...structuredClone(DEFAULT_SETTINGS.projects), defaultWorkspaceDir: path.join(os.homedir(), 'SlidevProjects') }
+        projects: {
+          ...structuredClone(DEFAULT_SETTINGS.projects),
+          defaultWorkspaceDir: path.join(os.homedir(), 'SlidevProjects')
+        }
       }
     }
     this.init()
@@ -61,30 +65,37 @@ export class ProjectStore {
         const raw = fs.readFileSync(this.configPath, 'utf8')
         const parsed = JSON.parse(raw)
         const settings = parsed.settings || {}
-        const upgradeLegacyStartupTimeout = settings.settingsVersion === 2
-          && settings.server?.startupTimeoutMs === 20000
+        const upgradeLegacyStartupTimeout =
+          settings.settingsVersion === 2 && settings.server?.startupTimeoutMs === 20000
         const currentSettings = upgradeLegacyStartupTimeout
           ? { ...settings, server: { ...settings.server, startupTimeoutMs: DEFAULT_SETTINGS.server.startupTimeoutMs } }
           : settings
-        const migrated = settings.settingsVersion === 2
-          ? currentSettings
-          : this.migrateV1Settings(settings)
+        const migrated = settings.settingsVersion === 2 ? currentSettings : this.migrateV1Settings(settings)
         if (settings.settingsVersion !== 2) {
           const backupPath = `${this.configPath}.bak-v1`
           if (!fs.existsSync(backupPath)) fs.copyFileSync(this.configPath, backupPath)
         }
-        const projects = Array.isArray(parsed.projects) ? (parsed.projects as ProjectItem[]).map((project) => ({ ...project, trusted: typeof project.trusted === 'boolean' ? project.trusted : true })) : []
+        const projects = Array.isArray(parsed.projects)
+          ? (parsed.projects as ProjectItem[]).map((project) => ({
+              ...project,
+              trusted: typeof project.trusted === 'boolean' ? project.trusted : true
+            }))
+          : []
         const uniqueProjects: ProjectItem[] = []
-        for (const project of [...projects].sort((a, b) => (Date.parse(b.lastOpenedAt) || 0) - (Date.parse(a.lastOpenedAt) || 0))) {
+        for (const project of [...projects].sort(
+          (a, b) => (Date.parse(b.lastOpenedAt) || 0) - (Date.parse(a.lastOpenedAt) || 0)
+        )) {
           const existing = uniqueProjects.find((item) => samePath(item.path, project.path))
           if (!existing) uniqueProjects.push(project)
-          else if (existing.preferredPort === undefined && project.preferredPort !== undefined) existing.preferredPort = project.preferredPort
+          else if (existing.preferredPort === undefined && project.preferredPort !== undefined)
+            existing.preferredPort = project.preferredPort
         }
         this.data = {
           projects: uniqueProjects,
           settings: this.sanitizeSettings(this.deepMerge(this.data.settings, migrated))
         }
-        if (settings.settingsVersion !== 2 || uniqueProjects.length !== projects.length || upgradeLegacyStartupTimeout) this.save()
+        if (settings.settingsVersion !== 2 || uniqueProjects.length !== projects.length || upgradeLegacyStartupTimeout)
+          this.save()
       } else {
         this.save()
       }
@@ -135,15 +146,23 @@ export class ProjectStore {
       return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback
     }
     const pick = <T extends string>(input: unknown, allowed: readonly T[], fallback: T): T =>
-      allowed.includes(input as T) ? input as T : fallback
-    const safeString = (input: unknown, fallback: string): string => typeof input === 'string' ? input : fallback
-    const safeBoolean = (input: unknown, fallback: boolean): boolean => typeof input === 'boolean' ? input : fallback
-    const themeIds = ['studio-dark', 'academic-overleaf', 'github-light', 'dracula', 'nord', 'catppuccin-mocha'] as const
+      allowed.includes(input as T) ? (input as T) : fallback
+    const safeString = (input: unknown, fallback: string): string => (typeof input === 'string' ? input : fallback)
+    const safeBoolean = (input: unknown, fallback: boolean): boolean => (typeof input === 'boolean' ? input : fallback)
+    const themeIds = [
+      'studio-dark',
+      'academic-overleaf',
+      'github-light',
+      'dracula',
+      'nord',
+      'catppuccin-mocha'
+    ] as const
     const settings = this.deepMerge(structuredClone(DEFAULT_SETTINGS), value as unknown as Record<string, any>)
     const legacyWorkspace = (value as any)?.defaultWorkspaceDir
     const legacyNodePath = (value as any)?.nodePathOverride
     const legacyFontSize = (value as any)?.editorFontSize
-    if (legacyWorkspace && !settings.projects.defaultWorkspaceDir) settings.projects.defaultWorkspaceDir = legacyWorkspace
+    if (legacyWorkspace && !settings.projects.defaultWorkspaceDir)
+      settings.projects.defaultWorkspaceDir = legacyWorkspace
     if (legacyNodePath && !settings.system.nodePathOverride) settings.system.nodePathOverride = legacyNodePath
     if (legacyFontSize) settings.editor.fontSize = legacyFontSize
     settings.settingsVersion = 2
@@ -151,7 +170,11 @@ export class ProjectStore {
     settings.appearance.themeIdLight = pick(settings.appearance.themeIdLight, themeIds, 'academic-overleaf')
     settings.appearance.themeIdDark = pick(settings.appearance.themeIdDark, themeIds, 'studio-dark')
     settings.appearance.uiZoom = safeNumber(settings.appearance.uiZoom, 1, 0.85, 1.25)
-    settings.appearance.uiFontFamily = pick(settings.appearance.uiFontFamily, ['system', 'inter', 'source-sans'] as const, 'system')
+    settings.appearance.uiFontFamily = pick(
+      settings.appearance.uiFontFamily,
+      ['system', 'inter', 'source-sans'] as const,
+      'system'
+    )
     settings.appearance.followSystem = safeBoolean(settings.appearance.followSystem, false)
     settings.editor.fontSize = safeNumber(settings.editor.fontSize, 14, 10, 32)
     settings.editor.fontFamily = safeString(settings.editor.fontFamily, DEFAULT_SETTINGS.editor.fontFamily)
@@ -163,24 +186,66 @@ export class ProjectStore {
     settings.editor.monacoTheme = safeString(settings.editor.monacoTheme, 'follow-app')
     settings.editor.tabSize = Number(settings.editor.tabSize) === 4 ? 4 : 2
     settings.editor.wordWrap = pick(settings.editor.wordWrap, ['on', 'off'] as const, 'on')
-    settings.editor.renderWhitespace = pick(settings.editor.renderWhitespace, ['none', 'selection', 'all'] as const, 'selection')
+    settings.editor.renderWhitespace = pick(
+      settings.editor.renderWhitespace,
+      ['none', 'selection', 'all'] as const,
+      'selection'
+    )
     settings.editor.autoSave = pick(settings.editor.autoSave, ['off', 'afterDelay', 'onBlur'] as const, 'afterDelay')
-    settings.preview.navMode = pick(settings.preview.navMode, ['paged', 'scroll-vertical', 'scroll-horizontal'] as const, 'paged')
+    settings.preview.navMode = pick(
+      settings.preview.navMode,
+      ['paged', 'scroll-vertical', 'scroll-horizontal'] as const,
+      'paged'
+    )
     settings.preview.wheelAxis = pick(settings.preview.wheelAxis, ['horizontal', 'vertical', 'both'] as const, 'both')
-    settings.preview.fitMode = pick(settings.preview.fitMode, ['fit-width', 'fit-height', 'manual'] as const, 'fit-width')
-    settings.preview.colorScheme = pick(settings.preview.colorScheme, ['follow-app', 'light', 'dark', 'slide-default'] as const, 'follow-app')
+    settings.preview.fitMode = pick(
+      settings.preview.fitMode,
+      ['fit-width', 'fit-height', 'manual'] as const,
+      'fit-width'
+    )
+    settings.preview.colorScheme = pick(
+      settings.preview.colorScheme,
+      ['follow-app', 'light', 'dark', 'slide-default'] as const,
+      'follow-app'
+    )
     settings.preview.slideGapPx = safeNumber(settings.preview.slideGapPx, 24, 0, 120)
     settings.preview.scrollSnap = safeBoolean(settings.preview.scrollSnap, true)
     settings.preview.restoreSlideAfterRestart = safeBoolean(settings.preview.restoreSlideAfterRestart, true)
     settings.preview.sourceJump.enabled = safeBoolean(settings.preview.sourceJump.enabled, true)
-    settings.preview.sourceJump.trigger = pick(settings.preview.sourceJump.trigger, ['alt-click', 'ctrl-click', 'double-click', 'click'] as const, 'alt-click')
+    settings.preview.sourceJump.trigger = pick(
+      settings.preview.sourceJump.trigger,
+      ['alt-click', 'ctrl-click', 'double-click', 'click'] as const,
+      'alt-click'
+    )
     settings.preview.sourceJump.flashMs = safeNumber(settings.preview.sourceJump.flashMs, 1000, 100, 5000)
-    settings.preview.sourceJump.syncEditorToPreview = safeBoolean(settings.preview.sourceJump.syncEditorToPreview, false)
-    settings.server.defaultPort = safeNumber(settings.server.defaultPort, DEFAULT_SETTINGS.server.defaultPort, 1024, 65535)
-    settings.server.portScanRange = safeNumber(settings.server.portScanRange, DEFAULT_SETTINGS.server.portScanRange, 0, 10000)
-    settings.server.startupTimeoutMs = safeNumber(settings.server.startupTimeoutMs, DEFAULT_SETTINGS.server.startupTimeoutMs, 1000, 120000)
+    settings.preview.sourceJump.syncEditorToPreview = safeBoolean(
+      settings.preview.sourceJump.syncEditorToPreview,
+      false
+    )
+    settings.server.defaultPort = safeNumber(
+      settings.server.defaultPort,
+      DEFAULT_SETTINGS.server.defaultPort,
+      1024,
+      65535
+    )
+    settings.server.portScanRange = safeNumber(
+      settings.server.portScanRange,
+      DEFAULT_SETTINGS.server.portScanRange,
+      0,
+      10000
+    )
+    settings.server.startupTimeoutMs = safeNumber(
+      settings.server.startupTimeoutMs,
+      DEFAULT_SETTINGS.server.startupTimeoutMs,
+      1000,
+      120000
+    )
     settings.server.bindMode = pick(settings.server.bindMode, ['localhost', 'lan'] as const, 'localhost')
-    settings.server.packageManager = pick(settings.server.packageManager, ['npm', 'pnpm', 'yarn', 'bun'] as const, 'npm')
+    settings.server.packageManager = pick(
+      settings.server.packageManager,
+      ['npm', 'pnpm', 'yarn', 'bun'] as const,
+      'npm'
+    )
     settings.server.strictPort = safeBoolean(settings.server.strictPort, false)
     settings.server.remotePassword = safeString(settings.server.remotePassword, '')
     settings.server.openExternalBrowser = safeBoolean(settings.server.openExternalBrowser, false)
@@ -189,12 +254,17 @@ export class ProjectStore {
     settings.server.registry = safeString(settings.server.registry, '')
     settings.server.stopServerOnTabClose = safeBoolean(settings.server.stopServerOnTabClose, true)
     settings.server.keepServersOnQuit = safeBoolean(settings.server.keepServersOnQuit, false)
-    settings.export.defaultFormat = pick(settings.export.defaultFormat, ['pdf', 'png', 'pptx', 'pptx-editable', 'md', 'build'] as const, 'pdf')
+    settings.export.defaultFormat = pick(
+      settings.export.defaultFormat,
+      ['pdf', 'png', 'pptx', 'pptx-editable', 'md', 'build'] as const,
+      'pdf'
+    )
     settings.export.outputDir = safeString(settings.export.outputDir, 'project/export')
     settings.export.openFolderAfterExport = safeBoolean(settings.export.openFolderAfterExport, false)
-    const exportOptions = settings.export.defaultOptions && typeof settings.export.defaultOptions === 'object'
-      ? settings.export.defaultOptions
-      : DEFAULT_SETTINGS.export.defaultOptions
+    const exportOptions =
+      settings.export.defaultOptions && typeof settings.export.defaultOptions === 'object'
+        ? settings.export.defaultOptions
+        : DEFAULT_SETTINGS.export.defaultOptions
     settings.export.defaultOptions = {
       range: typeof exportOptions.range === 'string' ? exportOptions.range : undefined,
       dark: safeBoolean(exportOptions.dark, false),
@@ -203,7 +273,10 @@ export class ProjectStore {
       timeout: exportOptions.timeout === undefined ? undefined : safeNumber(exportOptions.timeout, 30000, 1000, 120000),
       outputName: typeof exportOptions.outputName === 'string' ? exportOptions.outputName : undefined
     }
-    settings.projects.defaultWorkspaceDir = safeString(settings.projects.defaultWorkspaceDir, defaults.projects.defaultWorkspaceDir)
+    settings.projects.defaultWorkspaceDir = safeString(
+      settings.projects.defaultWorkspaceDir,
+      defaults.projects.defaultWorkspaceDir
+    )
     settings.projects.defaultAuthor = safeString(settings.projects.defaultAuthor, '')
     settings.projects.defaultCliRange = safeString(settings.projects.defaultCliRange, '^53.0.0')
     settings.projects.gitInitOnCreate = safeBoolean(settings.projects.gitInitOnCreate, false)
@@ -220,6 +293,12 @@ export class ProjectStore {
       this.settingsSaveTimer = null
       this.save()
     }, 300)
+  }
+
+  public flushSettings(): void {
+    if (this.settingsSaveTimer) clearTimeout(this.settingsSaveTimer)
+    this.settingsSaveTimer = null
+    this.save()
   }
 
   public getProjects(): ProjectItem[] {
@@ -250,14 +329,18 @@ export class ProjectStore {
       const value = DEFAULT_SETTINGS[group] as any
       this.data.settings = this.sanitizeSettings({
         ...this.data.settings,
-        [group]: group === 'projects'
-          ? { ...structuredClone(value), defaultWorkspaceDir: path.join(os.homedir(), 'SlidevProjects') }
-          : structuredClone(value)
+        [group]:
+          group === 'projects'
+            ? { ...structuredClone(value), defaultWorkspaceDir: path.join(os.homedir(), 'SlidevProjects') }
+            : structuredClone(value)
       })
     } else {
       this.data.settings = this.sanitizeSettings({
         ...structuredClone(DEFAULT_SETTINGS),
-        projects: { ...structuredClone(DEFAULT_SETTINGS.projects), defaultWorkspaceDir: path.join(os.homedir(), 'SlidevProjects') }
+        projects: {
+          ...structuredClone(DEFAULT_SETTINGS.projects),
+          defaultWorkspaceDir: path.join(os.homedir(), 'SlidevProjects')
+        }
       })
     }
     this.scheduleSettingsSave()
@@ -268,10 +351,11 @@ export class ProjectStore {
     const { settings: imported, warnings } = validateSettingsImportFields(input)
     const next = this.sanitizeSettings(this.deepMerge(this.data.settings, imported))
     const current = this.data.settings
-    const changedSensitive = current.system.nodePathOverride !== next.system.nodePathOverride
-      || current.server.registry !== next.server.registry
-      || current.server.extraArgs !== next.server.extraArgs
-      || current.export.outputDir !== next.export.outputDir
+    const changedSensitive =
+      current.system.nodePathOverride !== next.system.nodePathOverride ||
+      current.server.registry !== next.server.registry ||
+      current.server.extraArgs !== next.server.extraArgs ||
+      current.export.outputDir !== next.export.outputDir
     return { settings: next, warnings, changedSensitive }
   }
 
@@ -292,12 +376,20 @@ export class ProjectStore {
   public updateProject(id: string, partial: Partial<ProjectItem>): ProjectItem | undefined {
     const project = this.data.projects.find((p) => p.id === id)
     if (!project) return undefined
-    if (typeof partial.name === 'string' && partial.name.trim().length >= 1 && partial.name.trim().length <= 100) project.name = partial.name.trim()
-    if ('preferredPort' in partial && (partial.preferredPort === undefined || (Number.isInteger(partial.preferredPort) && partial.preferredPort >= 1024 && partial.preferredPort <= 65535))) {
+    if (typeof partial.name === 'string' && partial.name.trim().length >= 1 && partial.name.trim().length <= 100)
+      project.name = partial.name.trim()
+    if (
+      'preferredPort' in partial &&
+      (partial.preferredPort === undefined ||
+        (Number.isInteger(partial.preferredPort) && partial.preferredPort >= 1024 && partial.preferredPort <= 65535))
+    ) {
       project.preferredPort = partial.preferredPort
     }
     if (typeof partial.trusted === 'boolean') project.trusted = partial.trusted
-    if (Array.isArray(partial.entryFiles) && partial.entryFiles.every((file) => typeof file === 'string' && file.endsWith('.md') && !/[\\/]|\.\./.test(file))) {
+    if (
+      Array.isArray(partial.entryFiles) &&
+      partial.entryFiles.every((file) => typeof file === 'string' && file.endsWith('.md') && !/[\\/]|\.\./.test(file))
+    ) {
       project.entryFiles = [...partial.entryFiles]
     }
     this.save()
@@ -314,7 +406,9 @@ export class ProjectStore {
     return false
   }
 
-  public async validateSlidevFolder(folderPath: string): Promise<{ valid: boolean; entryFiles: string[]; reason?: string }> {
+  public async validateSlidevFolder(
+    folderPath: string
+  ): Promise<{ valid: boolean; entryFiles: string[]; reason?: string }> {
     if (!fs.existsSync(folderPath)) {
       return { valid: false, entryFiles: [], reason: 'Thư mục không tồn tại' }
     }
@@ -346,7 +440,10 @@ export class ProjectStore {
     for (const f of mdFiles) {
       try {
         const content = (await fs.readFile(path.join(folderPath, f), 'utf8')).replace(/^\uFEFF/, '').trimStart()
-        if (content.startsWith('---') && (content.includes('theme:') || content.includes('layout:') || content.includes('title:'))) {
+        if (
+          content.startsWith('---') &&
+          (content.includes('theme:') || content.includes('layout:') || content.includes('title:'))
+        ) {
           validEntryFiles.push(f)
         }
       } catch {
@@ -357,7 +454,9 @@ export class ProjectStore {
     // Also check README.md if no other md files found
     if (validEntryFiles.length === 0 && files.includes('README.md')) {
       try {
-        const content = (await fs.readFile(path.join(folderPath, 'README.md'), 'utf8')).replace(/^\uFEFF/, '').trimStart()
+        const content = (await fs.readFile(path.join(folderPath, 'README.md'), 'utf8'))
+          .replace(/^\uFEFF/, '')
+          .trimStart()
         if (content.startsWith('---') && (content.includes('theme:') || content.includes('layout:'))) {
           validEntryFiles.push('README.md')
         }
@@ -382,7 +481,8 @@ export class ProjectStore {
       return {
         valid: false,
         entryFiles: [],
-        reason: 'Thư mục không chứa cấu hình Slidev hợp lệ (không có @slidev/cli trong package.json và không tìm thấy file .md có frontmatter Slidev).'
+        reason:
+          'Thư mục không chứa cấu hình Slidev hợp lệ (không có @slidev/cli trong package.json và không tìm thấy file .md có frontmatter Slidev).'
       }
     }
 
@@ -437,7 +537,8 @@ export class ProjectStore {
   }
 
   public async cloneFromGit(url: string, targetDir: string): Promise<ProjectItem> {
-    if (!validateGitUrl(url)) throw new Error('URL Git không hợp lệ. Chỉ chấp nhận HTTPS, SSH hoặc dạng git@host:owner/repo.git.')
+    if (!validateGitUrl(url))
+      throw new Error('URL Git không hợp lệ. Chỉ chấp nhận HTTPS, SSH hoặc dạng git@host:owner/repo.git.')
     // Check git installed
     try {
       await execa('git', ['--version'])
@@ -451,12 +552,19 @@ export class ProjectStore {
 
     // Derive repo name from git url
     const sourcePath = url.startsWith('git@') ? url.split(':').pop() : new URL(url).pathname
-    const repoName = sourcePath?.replace(/\/$/, '').split('/').pop()?.replace(/\.git$/, '') || 'slidev-project'
-    if (!/^[A-Za-z0-9._-]{1,64}$/.test(repoName) || repoName === '.' || repoName === '..') throw new Error('Tên repository trong URL Git không hợp lệ.')
+    const repoName =
+      sourcePath
+        ?.replace(/\/$/, '')
+        .split('/')
+        .pop()
+        ?.replace(/\.git$/, '') || 'slidev-project'
+    if (!/^[A-Za-z0-9._-]{1,64}$/.test(repoName) || repoName === '.' || repoName === '..')
+      throw new Error('Tên repository trong URL Git không hợp lệ.')
     const resolvedTarget = path.resolve(targetDir)
     const destPath = path.resolve(resolvedTarget, repoName)
     const relative = path.relative(resolvedTarget, destPath)
-    if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) throw new Error('Đường dẫn repository nằm ngoài thư mục đích.')
+    if (!relative || relative === '..' || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative))
+      throw new Error('Đường dẫn repository nằm ngoài thư mục đích.')
 
     if (fs.existsSync(destPath)) {
       throw new Error(`Thư mục đích "${destPath}" đã tồn tại. Vui lòng chọn tên khác hoặc xoá thư mục cũ.`)
@@ -488,7 +596,10 @@ export class ProjectStore {
       throw new Error('Thư mục lưu bản sao không tồn tại hoặc không hợp lệ.')
     }
     const relativeToSource = path.relative(sourcePath, parentPath)
-    if (!relativeToSource || (relativeToSource !== '..' && !relativeToSource.startsWith(`..${path.sep}`) && !path.isAbsolute(relativeToSource))) {
+    if (
+      !relativeToSource ||
+      (relativeToSource !== '..' && !relativeToSource.startsWith(`..${path.sep}`) && !path.isAbsolute(relativeToSource))
+    ) {
       throw new Error('Hãy chọn thư mục lưu bản sao nằm ngoài thư mục dự án gốc.')
     }
 
@@ -517,7 +628,7 @@ export class ProjectStore {
     const occupiedPorts = new Set<number>([
       settings.defaultPort,
       ...(activePort ? [activePort] : []),
-      ...this.data.projects.flatMap((project) => project.preferredPort ? [project.preferredPort] : [])
+      ...this.data.projects.flatMap((project) => (project.preferredPort ? [project.preferredPort] : []))
     ])
 
     let clonePort: number | undefined

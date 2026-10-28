@@ -1,8 +1,9 @@
 import fs from 'fs-extra'
 import path from 'path'
 import os from 'os'
+import { dataDir } from './dataDir'
 
-const logPath = path.join(os.homedir(), '.slidev-studio', 'logs', 'main.log')
+const logPath = path.join(dataDir(), 'logs', 'main.log')
 
 export function diag(event: string, details: Record<string, unknown> = {}): void {
   try {

@@ -1,0 +1,663 @@
+{
+  "recordedAt": "2026-10-28T16:43:46.156Z",
+  "runs": [
+    {
+      "iteration": 0,
+      "warmup": true,
+      "launchMs": 681.7492,
+      "editorReady": false,
+      "editorMs": 10341.9225,
+      "metrics": [
+        {
+          "type": "Browser",
+          "memory": {
+            "workingSetSize": 115192,
+            "peakWorkingSetSize": 115232,
+            "privateBytes": 84824
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "GPU",
+          "memory": {
+            "workingSetSize": 107540,
+            "peakWorkingSetSize": 111484,
+            "privateBytes": 118748
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 52160,
+            "peakWorkingSetSize": 55120,
+            "privateBytes": 17432
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 109500,
+            "peakWorkingSetSize": 109528,
+            "privateBytes": 53852
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 146680,
+            "peakWorkingSetSize": 146784,
+            "privateBytes": 83868
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 85332,
+            "peakWorkingSetSize": 85332,
+            "privateBytes": 12368
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 95512,
+            "peakWorkingSetSize": 95652,
+            "privateBytes": 16300
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        }
+      ],
+      "limitation": "Offline editor did not load within 10 seconds; typing and cached-tab metrics unavailable."
+    },
+    {
+      "iteration": 1,
+      "warmup": true,
+      "launchMs": 657.2740999999987,
+      "editorReady": false,
+      "editorMs": 10335.366400000003,
+      "metrics": [
+        {
+          "type": "Browser",
+          "memory": {
+            "workingSetSize": 115004,
+            "peakWorkingSetSize": 115004,
+            "privateBytes": 83740
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "GPU",
+          "memory": {
+            "workingSetSize": 105668,
+            "peakWorkingSetSize": 111452,
+            "privateBytes": 107340
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 51936,
+            "peakWorkingSetSize": 55048,
+            "privateBytes": 16972
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 109828,
+            "peakWorkingSetSize": 110228,
+            "privateBytes": 53604
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 144716,
+            "peakWorkingSetSize": 144772,
+            "privateBytes": 81740
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 85492,
+            "peakWorkingSetSize": 85492,
+            "privateBytes": 12296
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 95596,
+            "peakWorkingSetSize": 95732,
+            "privateBytes": 16320
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        }
+      ],
+      "limitation": "Offline editor did not load within 10 seconds; typing and cached-tab metrics unavailable."
+    },
+    {
+      "iteration": 2,
+      "warmup": false,
+      "launchMs": 782.1820000000007,
+      "editorReady": false,
+      "editorMs": 10508.670700000002,
+      "metrics": [
+        {
+          "type": "Browser",
+          "memory": {
+            "workingSetSize": 117572,
+            "peakWorkingSetSize": 117572,
+            "privateBytes": 85228
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "GPU",
+          "memory": {
+            "workingSetSize": 121996,
+            "peakWorkingSetSize": 127256,
+            "privateBytes": 113812
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 61236,
+            "peakWorkingSetSize": 63868,
+            "privateBytes": 17192
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 113376,
+            "peakWorkingSetSize": 113492,
+            "privateBytes": 53912
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 143696,
+            "peakWorkingSetSize": 143696,
+            "privateBytes": 79956
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 85728,
+            "peakWorkingSetSize": 85728,
+            "privateBytes": 12288
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 95820,
+            "peakWorkingSetSize": 95984,
+            "privateBytes": 16204
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        }
+      ],
+      "limitation": "Offline editor did not load within 10 seconds; typing and cached-tab metrics unavailable."
+    },
+    {
+      "iteration": 3,
+      "warmup": false,
+      "launchMs": 643.9323000000004,
+      "editorReady": false,
+      "editorMs": 10348.052300000003,
+      "metrics": [
+        {
+          "type": "Browser",
+          "memory": {
+            "workingSetSize": 115508,
+            "peakWorkingSetSize": 115508,
+            "privateBytes": 84468
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "GPU",
+          "memory": {
+            "workingSetSize": 103352,
+            "peakWorkingSetSize": 111176,
+            "privateBytes": 94484
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 52128,
+            "peakWorkingSetSize": 55196,
+            "privateBytes": 17236
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 109224,
+            "peakWorkingSetSize": 109264,
+            "privateBytes": 53292
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 120904,
+            "peakWorkingSetSize": 129256,
+            "privateBytes": 82796
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 85676,
+            "peakWorkingSetSize": 85676,
+            "privateBytes": 12440
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 79380,
+            "peakWorkingSetSize": 95792,
+            "privateBytes": 16360
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        }
+      ],
+      "limitation": "Offline editor did not load within 10 seconds; typing and cached-tab metrics unavailable."
+    },
+    {
+      "iteration": 4,
+      "warmup": false,
+      "launchMs": 686.734300000011,
+      "editorReady": false,
+      "editorMs": 10347.373200000002,
+      "metrics": [
+        {
+          "type": "Browser",
+          "memory": {
+            "workingSetSize": 115464,
+            "peakWorkingSetSize": 115492,
+            "privateBytes": 86448
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "GPU",
+          "memory": {
+            "workingSetSize": 91092,
+            "peakWorkingSetSize": 110924,
+            "privateBytes": 93756
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 38360,
+            "peakWorkingSetSize": 54992,
+            "privateBytes": 17096
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 95444,
+            "peakWorkingSetSize": 110424,
+            "privateBytes": 55984
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 115980,
+            "peakWorkingSetSize": 125484,
+            "privateBytes": 80368
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 50736,
+            "peakWorkingSetSize": 85556,
+            "privateBytes": 12384
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 60876,
+            "peakWorkingSetSize": 95828,
+            "privateBytes": 16280
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        }
+      ],
+      "limitation": "Offline editor did not load within 10 seconds; typing and cached-tab metrics unavailable."
+    },
+    {
+      "iteration": 5,
+      "warmup": false,
+      "launchMs": 693.7294999999867,
+      "editorReady": false,
+      "editorMs": 10348.57740000001,
+      "metrics": [
+        {
+          "type": "Browser",
+          "memory": {
+            "workingSetSize": 115032,
+            "peakWorkingSetSize": 115032,
+            "privateBytes": 84548
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "GPU",
+          "memory": {
+            "workingSetSize": 91736,
+            "peakWorkingSetSize": 116156,
+            "privateBytes": 96092
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 33940,
+            "peakWorkingSetSize": 55752,
+            "privateBytes": 17588
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 92600,
+            "peakWorkingSetSize": 110716,
+            "privateBytes": 54948
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 115632,
+            "peakWorkingSetSize": 115768,
+            "privateBytes": 80700
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 85576,
+            "peakWorkingSetSize": 85576,
+            "privateBytes": 12368
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 95688,
+            "peakWorkingSetSize": 95832,
+            "privateBytes": 16212
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        }
+      ],
+      "limitation": "Offline editor did not load within 10 seconds; typing and cached-tab metrics unavailable."
+    },
+    {
+      "iteration": 6,
+      "warmup": false,
+      "launchMs": 627.2547999999952,
+      "editorReady": false,
+      "editorMs": 10347.786699999997,
+      "metrics": [
+        {
+          "type": "Browser",
+          "memory": {
+            "workingSetSize": 115284,
+            "peakWorkingSetSize": 115284,
+            "privateBytes": 85368
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "GPU",
+          "memory": {
+            "workingSetSize": 105888,
+            "peakWorkingSetSize": 111236,
+            "privateBytes": 117388
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 52504,
+            "peakWorkingSetSize": 55748,
+            "privateBytes": 17244
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 109180,
+            "peakWorkingSetSize": 109656,
+            "privateBytes": 53976
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Tab",
+          "memory": {
+            "workingSetSize": 144404,
+            "peakWorkingSetSize": 144416,
+            "privateBytes": 81472
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 85512,
+            "peakWorkingSetSize": 85512,
+            "privateBytes": 12388
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        },
+        {
+          "type": "Utility",
+          "memory": {
+            "workingSetSize": 95728,
+            "peakWorkingSetSize": 95756,
+            "privateBytes": 17180
+          },
+          "cpu": {
+            "percentCPUUsage": 0,
+            "idleWakeupsPerSecond": 0
+          }
+        }
+      ],
+      "limitation": "Offline editor did not load within 10 seconds; typing and cached-tab metrics unavailable."
+    }
+  ]
+}

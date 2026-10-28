@@ -2,7 +2,7 @@ import fs from 'fs-extra'
 import os from 'os'
 import path from 'path'
 import { execa } from 'execa'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 
 const script = path.resolve('electron/templates/git-collab/.github/scripts/check-scope.mjs')
 let root: string
@@ -19,9 +19,15 @@ const commit = async () => {
 }
 beforeEach(async () => {
   root = await fs.mkdtemp(path.join(os.tmpdir(), 'slidev-policy-test-'))
+  const gitConfig = path.join(root, 'empty.gitconfig')
+  await fs.writeFile(gitConfig, '')
+  vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1')
+  vi.stubEnv('GIT_CONFIG_GLOBAL', gitConfig)
   await run(['init', '-b', 'main'])
   await run(['config', 'user.name', 'Test'])
   await run(['config', 'user.email', 'test@example.com'])
+  await run(['config', 'core.autocrlf', 'false'])
+  await run(['config', 'commit.gpgsign', 'false'])
   await fs.writeJson(path.join(root, 'slidev-collab.json'), {
     coordinator: 'leader',
     sections: [
@@ -36,6 +42,7 @@ beforeEach(async () => {
   base = await run(['rev-parse', 'HEAD'])
 })
 afterEach(async () => {
+  vi.unstubAllEnvs()
   await fs.remove(root)
 })
 
@@ -61,8 +68,9 @@ describe('trusted CI ownership policy', () => {
     await expect(policy()).rejects.toThrow(/Sửa ngoài phần phân công/)
     await run(['reset', '--hard', base])
     await fs.ensureDir(path.join(root, 'sections-assets/01-intro'))
-    await fs.symlink('/etc/passwd', path.join(root, 'sections-assets/01-intro/secret'))
-    await commit()
+    const blob = (await execa('git', ['hash-object', '-w', '--stdin'], { cwd: root, input: '/etc/passwd' })).stdout
+    await run(['update-index', '--add', '--cacheinfo', `120000,${blob},sections-assets/01-intro/secret`])
+    await run(['commit', '-m', 'symlink contribution'])
     await expect(policy()).rejects.toThrow(/symlink/)
   })
   it('allows coordinator structure changes but still rejects section globals', async () => {

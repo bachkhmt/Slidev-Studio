@@ -15,6 +15,8 @@ function validateProject(projectId: string, projectPath: string, entryFile: stri
 }
 
 export function registerProcessIpc(): void {
+  ipcMain.handle('process:release', (_event, id: string) => processManager.release(id))
+  ipcMain.handle('process:prioritize', (_event, id: string) => processManager.prioritize(id))
   ipcMain.handle(
     'process:start',
     async (
@@ -63,6 +65,9 @@ export function registerProcessIpc(): void {
   })
 
   ipcMain.handle('process:getLogs', async (_event, projectId: string) => processManager.getLogs(projectId))
-  ipcMain.handle('process:confirmTrust', async (_event, requestId: string, choice: 'once' | 'remember' | 'cancel', ignoreScripts: boolean) =>
-    processManager.confirmTrust(requestId, choice, ignoreScripts))
+  ipcMain.handle(
+    'process:confirmTrust',
+    async (_event, requestId: string, choice: 'once' | 'remember' | 'cancel', ignoreScripts: boolean) =>
+      processManager.confirmTrust(requestId, choice, ignoreScripts)
+  )
 }

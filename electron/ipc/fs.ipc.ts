@@ -50,6 +50,18 @@ async function buildTree(dirPath: string, depth = 0): Promise<FileNode[]> {
 }
 
 export function registerFsIpc(): void {
+  ipcMain.handle('fs:listDirectory', async (_event, dir: string): Promise<FileNode[]> => {
+    const safe = assertInsideAllowedRoot(dir, 'read')
+    const entries = await fs.readdir(safe, { withFileTypes: true })
+    return entries
+      .filter((e) => !IGNORED_NAMES.has(e.name) && !e.isSymbolicLink())
+      .map((e) => ({ name: e.name, path: path.join(safe, e.name), isDirectory: e.isDirectory() }))
+      .sort((a, b) => Number(b.isDirectory) - Number(a.isDirectory) || a.name.localeCompare(b.name))
+  })
+  ipcMain.handle('fs:statFile', async (_event, file: string) => {
+    const stat = await fs.stat(assertInsideAllowedRoot(file, 'read'))
+    return { mtimeMs: stat.mtimeMs, size: stat.size }
+  })
   ipcMain.handle('fs:readFile', async (_event, filePath: string): Promise<string> => {
     return fs.readFile(assertInsideAllowedRoot(filePath, 'read'), 'utf8')
   })

@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { GitHubLogin } from '../components/GitHubLogin'
 import { ProjectCard } from '../components/ProjectCard'
+import appLogo from '../../build/icon.png'
 import api, { ProjectItem } from '../ipc-client'
 
 interface HomeDashboardProps {
@@ -86,7 +87,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
   }
 
   const handleUpdateProject = (project: ProjectItem) => {
-    setProjects((previous) => previous.map((item) => item.id === project.id ? project : item))
+    setProjects((previous) => previous.map((item) => (item.id === project.id ? project : item)))
   }
 
   const handleCloneProject = async (source: ProjectItem) => {
@@ -148,12 +149,14 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 overflow-y-auto">
-      <div className="border-b border-slate-800 px-8 py-3"><GitHubLogin /></div>
+      <div className="border-b border-slate-800 px-8 py-3">
+        <GitHubLogin />
+      </div>
       {/* Top Navbar */}
       <header className="app-chrome border-b border-slate-800 bg-slate-900/60 sticky top-0 z-20 backdrop-blur-md px-8 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-2.5 rounded-xl bg-gradient-to-tr from-blue-600 to-indigo-500 text-white shadow-lg shadow-blue-500/20">
-            <Presentation className="w-6 h-6" />
+          <div className="p-1 rounded-xl bg-white shadow-lg shadow-blue-500/20">
+            <img src={appLogo} alt="Logo Bách Khoa TP.HCM" className="w-10 h-10 object-contain" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -358,7 +361,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                   type="text"
                   value={gitTargetDir}
                   onChange={(e) => setGitTargetDir(e.target.value)}
-                placeholder="~/SlidevProjects"
+                  placeholder="~/SlidevProjects"
                   className="w-full bg-slate-800 border border-slate-700 rounded-xl px-4 py-2.5 text-xs font-mono text-slate-100 focus:outline-none focus:border-blue-500"
                 />
               </div>
@@ -396,7 +399,6 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
           </div>
         </div>
       )}
-
     </div>
   )
 }
