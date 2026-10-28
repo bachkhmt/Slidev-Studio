@@ -49,9 +49,11 @@
 
 ### 1. Chạy chế độ phát triển (Development)
 
+Yêu cầu: Node.js 22 LTS và npm. Cài thêm Git nếu dùng chức năng clone hoặc cộng tác GitHub.
+
 ```bash
 # Cài đặt thư viện (nếu chưa cài)
-npm install
+npm ci
 
 # Khởi động app ở chế độ dev
 npm run dev
@@ -79,6 +81,10 @@ npm run build:win
 # Đóng gói cho Linux (.AppImage)
 npm run build:linux
 ```
+
+Trên Windows x64, `npm run build:win` tạo bộ cài `dist/Slidev Studio-Setup-1.0.2-x64.exe` và bản chạy trực tiếp `dist/win-unpacked/Slidev Studio.exe`. Bộ cài cho phép chọn thư mục, cài cho tài khoản hiện tại và tạo shortcut trên Desktop/Start Menu. Logo gốc `build/icon.png` được dùng cho ứng dụng, cửa sổ, shortcut và màn hình chính; macOS dùng `build/icon.icns`.
+
+Mở file Setup để cài đặt, hoặc chạy bản `win-unpacked` để dùng ngay (giữ nguyên cả thư mục). Máy chạy ứng dụng cần có Node.js và npm trong PATH để cài dependencies và chạy các dự án Slidev.
 
 ---
 
@@ -137,3 +143,13 @@ Slidev/
 ├── electron.vite.config.ts     # Cấu hình electron-vite
 └── package.json
 ```
+
+## Kiểm thử desktop và hiệu năng
+
+Monaco và worker được đóng gói cùng ứng dụng để editor hoạt động offline. Workspace giữ bản nháp khi chuyển file, chỉ đóng sau khi xử lý nội dung chưa lưu, và giới hạn hai preview gần dùng.
+
+Chạy `npm run test:desktop:prepare` một lần để cài runtime fixture theo lockfile, sau đó `npm run test:e2e` cho Electron thật, `npm run test:export` để xuất PDF/PPTX/web thật và `npm run test:benchmark` để đo hiệu năng. Unit/component test chạy bằng `npm test`.
+
+Xem [báo cáo kiểm chứng](reports/implementation.md) và các số đo JSON trong `reports/`. Bộ cài cũ được giữ trong `dist/releases/baseline/`.
+
+Bản 1.0.2 sửa thao tác cộng tác khi workspace có file chỉ đọc và khi đang khóa editor để chạy Git. Xem [phạm vi kiểm thử cộng tác](reports/team-workflow.md) và [kết quả bản Windows](reports/validation.md).

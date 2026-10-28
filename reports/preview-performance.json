@@ -1,0 +1,131 @@
+{
+  "method": "Disk write to visible guest DOM; excludes editor autosave debounce. Two warmups and five measured updates per size.",
+  "results": [
+    {
+      "count": 30,
+      "serverReadyMs": 2657.8083,
+      "previewReadyMs": 5252.5382,
+      "updates": [
+        {
+          "iteration": 0,
+          "warmup": true,
+          "hmrMs": 807.9570000000003
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "hmrMs": 530.0790999999999
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "hmrMs": 492.5012000000006
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "hmrMs": 552.2480999999998
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "hmrMs": 519.189699999999
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "hmrMs": 510.01760000000104
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "hmrMs": 500.72439999999915
+        }
+      ]
+    },
+    {
+      "count": 100,
+      "serverReadyMs": 2400.7860999999994,
+      "previewReadyMs": 5622.363799999999,
+      "updates": [
+        {
+          "iteration": 0,
+          "warmup": true,
+          "hmrMs": 848.8215999999975
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "hmrMs": 623.6513999999988
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "hmrMs": 608.483699999997
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "hmrMs": 558.8454999999994
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "hmrMs": 583.7884999999987
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "hmrMs": 607.4419999999991
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "hmrMs": 575.8005999999987
+        }
+      ]
+    },
+    {
+      "count": 300,
+      "serverReadyMs": 2443.0806999999986,
+      "previewReadyMs": 6992.370299999999,
+      "updates": [
+        {
+          "iteration": 0,
+          "warmup": true,
+          "hmrMs": 1152.4326
+        },
+        {
+          "iteration": 1,
+          "warmup": true,
+          "hmrMs": 1002.925299999999
+        },
+        {
+          "iteration": 2,
+          "warmup": false,
+          "hmrMs": 844.3810999999987
+        },
+        {
+          "iteration": 3,
+          "warmup": false,
+          "hmrMs": 830.8649000000005
+        },
+        {
+          "iteration": 4,
+          "warmup": false,
+          "hmrMs": 861.2803999999996
+        },
+        {
+          "iteration": 5,
+          "warmup": false,
+          "hmrMs": 865.0153999999966
+        },
+        {
+          "iteration": 6,
+          "warmup": false,
+          "hmrMs": 840.3347999999969
+        }
+      ]
+    }
+  ]
+}
