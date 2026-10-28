@@ -5,13 +5,21 @@ import fs from 'fs'
 import os from 'os'
 import fixPath from 'fix-path'
 import { diag } from './utils/diag'
+import { registerCloseCoordinator } from './services/closeCoordinator'
 
 // Fix PATH for GUI launch on macOS
 fixPath()
 
+if (process.platform === 'win32') app.setAppUserModelId('com.slidev.studio')
+
 let mainWindow: BrowserWindow | null = null
 let focusOnReady = false
 let appInitialized = false
+const closeCoordinator = registerCloseCoordinator(async () => {
+  projectStore?.flushSettings()
+  await processManager?.stopAll()
+  app.exit(0)
+})
 let projectStore: typeof import('./services/projectStore').projectStore | null = null
 let processManager: typeof import('./services/processManager').processManager | null = null
 let getSettingsBackgroundColor: typeof import('./services/themeColors').getSettingsBackgroundColor | null = null
@@ -38,7 +46,9 @@ function openExternalHttpUrl(value: string): void {
   try {
     const protocol = new URL(value).protocol
     if (protocol === 'http:' || protocol === 'https:') {
-      void shell.openExternal(value).catch((error) => diag('open-external-error', { url: value, message: error.message }))
+      void shell
+        .openExternal(value)
+        .catch((error) => diag('open-external-error', { url: value, message: error.message }))
     } else {
       diag('blocked-webview-navigation', { url: value, protocol })
     }
@@ -84,7 +94,11 @@ app.on('web-contents-created', (_event, contents) => {
   let initialOrigin: string | undefined
   contents.on('will-navigate', (event, navigationUrl) => {
     let target: URL | undefined
-    try { target = new URL(navigationUrl) } catch { /* Block malformed destinations. */ }
+    try {
+      target = new URL(navigationUrl)
+    } catch {
+      /* Block malformed destinations. */
+    }
     if (!target) {
       event.preventDefault()
       return
@@ -115,6 +129,7 @@ function createWindow(): void {
     minWidth: 1024,
     minHeight: 680,
     title: 'Slidev Studio',
+    icon: app.isPackaged ? path.join(process.resourcesPath, 'icon.png') : path.join(__dirname, '../../build/icon.png'),
     backgroundColor: appBackgroundColor(),
     show: false,
     autoHideMenuBar: false,
@@ -132,6 +147,7 @@ function createWindow(): void {
   })
 
   processManager?.registerWindow(mainWindow)
+  closeCoordinator.attach(mainWindow)
 
   mainWindow.on('ready-to-show', () => {
     mainWindow?.show()
@@ -164,7 +180,18 @@ app.on('second-instance', () => {
 
 app.whenReady().then(async () => {
   if (!hasSingleInstanceLock) return
-  const [projectsIpc, processIpc, fsIpc, scaffoldIpc, exportIpc, settingsIpc, processService, projectService, themeColors, pidRegistry] = await Promise.all([
+  const [
+    projectsIpc,
+    processIpc,
+    fsIpc,
+    scaffoldIpc,
+    exportIpc,
+    settingsIpc,
+    processService,
+    projectService,
+    themeColors,
+    pidRegistry
+  ] = await Promise.all([
     import('./ipc/projects.ipc'),
     import('./ipc/process.ipc'),
     import('./ipc/fs.ipc'),
@@ -204,18 +231,10 @@ app.whenReady().then(async () => {
 })
 
 // Clean up all running Slidev dev servers when app quits
-let isQuitting = false
-
-app.on('before-quit', async (e) => {
-  if (!isQuitting) {
+app.on('before-quit', (e) => {
+  if (!closeCoordinator.allowed) {
     e.preventDefault()
-    isQuitting = true
-    try {
-      await processManager?.stopAll()
-    } catch (err) {
-      console.error('Error stopping processes before quit:', err)
-    }
-    app.exit(0)
+    void closeCoordinator.quit(mainWindow)
   }
 })
 

@@ -29,7 +29,10 @@ interface BatchExportResult {
 
 type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun'
 
-function getSlidevRunner(projectPath: string, _packageManager: PackageManager): { command: string; prefixArgs: string[] } {
+function getSlidevRunner(
+  projectPath: string,
+  _packageManager: PackageManager
+): { command: string; prefixArgs: string[] } {
   const runner = resolveSlidevRunner(projectPath)
   if (runner) return runner
   throw new Error('Không tìm thấy Slidev CLI cục bộ. Hãy cài dependencies trong dự án trước khi xuất.')
@@ -37,10 +40,14 @@ function getSlidevRunner(projectPath: string, _packageManager: PackageManager): 
 
 function getInstallCommand(packageManager: PackageManager): { command: string; args: string[] } {
   switch (packageManager) {
-    case 'pnpm': return { command: 'pnpm', args: ['add', '-D', 'playwright-chromium'] }
-    case 'yarn': return { command: 'yarn', args: ['add', '-D', 'playwright-chromium'] }
-    case 'bun': return { command: 'bun', args: ['add', '-d', 'playwright-chromium'] }
-    default: return { command: 'npm', args: ['install', '-D', 'playwright-chromium'] }
+    case 'pnpm':
+      return { command: 'pnpm', args: ['add', '-D', 'playwright-chromium'] }
+    case 'yarn':
+      return { command: 'yarn', args: ['add', '-D', 'playwright-chromium'] }
+    case 'bun':
+      return { command: 'bun', args: ['add', '-d', 'playwright-chromium'] }
+    default:
+      return { command: 'npm', args: ['install', '-D', 'playwright-chromium'] }
   }
 }
 
@@ -54,12 +61,17 @@ function safeOutputName(value: string | undefined, entryFile: string): string {
 
 function outputPathFor(format: ExportFormat, outputBase: string): string {
   switch (format) {
-    case 'pdf': return `${outputBase}.pdf`
+    case 'pdf':
+      return `${outputBase}.pdf`
     case 'pptx':
-    case 'pptx-editable': return `${outputBase}.pptx`
-    case 'md': return `${outputBase}.md`
-    case 'png': return outputBase
-    case 'build': return path.dirname(outputBase)
+    case 'pptx-editable':
+      return `${outputBase}.pptx`
+    case 'md':
+      return `${outputBase}.md`
+    case 'png':
+      return outputBase
+    case 'build':
+      return path.dirname(outputBase)
   }
 }
 
@@ -99,9 +111,7 @@ export async function runSingleExport(
 
   if (format === 'build') {
     const outDir = resolveProjectOutputDir(projectPath, options.outputDir, 'dist')
-    expectedOut = options.outputName
-      ? path.join(outDir, safeOutputName(options.outputName, entryFile))
-      : outDir
+    expectedOut = options.outputName ? path.join(outDir, safeOutputName(options.outputName, entryFile)) : outDir
     args = [
       ...cliPrefix,
       'build',
@@ -118,6 +128,9 @@ export async function runSingleExport(
     args = [...cliPrefix, 'export', entryFile, '--format', format, '--output', outputBase]
 
     if (options.range?.trim()) args.push('--range', options.range.trim())
+    // Slidev 53's one-piece PDF print route does not filter the requested range.
+    // Its per-slide route iterates the selected page numbers explicitly.
+    if (format === 'pdf' && options.range?.trim()) args.push('--per-slide')
     if (options.dark) args.push('--dark')
     if (typeof options.withClicks === 'boolean') args.push('--with-clicks', String(options.withClicks))
     if (options.omitBackground) args.push('--omit-background')
@@ -202,13 +215,7 @@ export function registerExportIpc(): void {
             ? entryStem
             : undefined
         try {
-          const result = await runSingleExport(
-            projectPath,
-            file,
-            format,
-            { ...options, outputName },
-            emitLog
-          )
+          const result = await runSingleExport(projectPath, file, format, { ...options, outputName }, emitLog)
           results.push({ file, success: true, outputPath: result.outputPath })
         } catch (err: any) {
           results.push({ file, success: false, error: err.message || String(err) })

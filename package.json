@@ -1,6 +1,6 @@
 {
   "name": "slidev-studio",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "Desktop app to manage and live-edit Slidev presentations",
   "type": "module",
   "main": "./out/main/index.js",
@@ -22,7 +22,11 @@
     "install:app": "./scripts/install-mac-app.sh",
     "build:win": "npm run build && electron-builder --win",
     "build:linux": "npm run build && electron-builder --linux",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder",
+    "test:desktop:prepare": "node scripts/prepare-desktop-tests.mjs",
+    "test:e2e": "npm run build && playwright test",
+    "test:benchmark": "node scripts/benchmark.mjs",
+    "test:export": "node scripts/export-smoke.mjs"
   },
   "dependencies": {
     "@electron-toolkit/preload": "^3.0.1",
@@ -40,6 +44,9 @@
   },
   "devDependencies": {
     "@monaco-editor/react": "^4.6.0",
+    "@playwright/test": "^1.56.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.14.9",
     "@types/react": "^18.3.3",
@@ -56,7 +63,9 @@
     "electron-vite": "^2.3.0",
     "eslint": "^10.11.0",
     "eslint-plugin-react-hooks": "^7.1.1",
+    "jsdom": "^26.1.0",
     "lucide-react": "^0.395.0",
+    "monaco-editor": "^0.55.1",
     "postcss": "^8.4.38",
     "prettier": "^3.9.9",
     "react": "^18.3.1",

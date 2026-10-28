@@ -7,6 +7,8 @@ files:
   - out/**/*
   - package.json
 extraResources:
+  - from: build/icon.png
+    to: icon.png
   - from: electron/templates
     to: templates
 mac:
@@ -20,8 +22,18 @@ mac:
   icon: build/icon.icns
 win:
   target:
-    - nsis
+    - target: nsis
+      arch:
+        - x64
   icon: build/icon.png
+  artifactName: '${productName}-Setup-${version}-${arch}.${ext}'
+nsis:
+  oneClick: false
+  perMachine: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: Slidev Studio
 linux:
   target:
     - AppImage

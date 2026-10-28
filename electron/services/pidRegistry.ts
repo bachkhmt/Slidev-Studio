@@ -5,6 +5,7 @@ import { execa } from 'execa'
 import treeKill from 'tree-kill'
 import { projectStore } from './projectStore'
 import { diag } from '../utils/diag'
+import { dataDir } from '../utils/dataDir'
 
 export interface RunningEntry {
   pid: number
@@ -16,7 +17,7 @@ export interface RunningEntry {
 }
 
 class PidRegistry {
-  private readonly filePath = path.join(os.homedir(), '.slidev-studio', 'running.json')
+  private readonly filePath = path.join(dataDir(), 'running.json')
 
   public list(): RunningEntry[] {
     try {
@@ -53,22 +54,36 @@ export async function reapOrphans(): Promise<void> {
   const entries = pidRegistry.list()
   for (const entry of entries) {
     let appAlive = true
-    try { process.kill(entry.appPid, 0) } catch (error) { appAlive = (error as NodeJS.ErrnoException).code !== 'ESRCH' }
+    try {
+      process.kill(entry.appPid, 0)
+    } catch (error) {
+      appAlive = (error as NodeJS.ErrnoException).code !== 'ESRCH'
+    }
     if (appAlive) {
-      diag('reap-skipped', { pid: entry.pid, projectId: entry.projectId, appPid: entry.appPid, reason: 'app-still-alive' })
+      diag('reap-skipped', {
+        pid: entry.pid,
+        projectId: entry.projectId,
+        appPid: entry.appPid,
+        reason: 'app-still-alive'
+      })
       continue
     }
 
     let command = ''
     try {
       if (process.platform === 'win32') {
-        const result = await execa('wmic', ['process', 'where', `processid=${entry.pid}`, 'get', 'commandline'], { buffer: true, reject: false })
+        const result = await execa('wmic', ['process', 'where', `processid=${entry.pid}`, 'get', 'commandline'], {
+          buffer: true,
+          reject: false
+        })
         command = result.stdout
       } else {
         const result = await execa('ps', ['-p', String(entry.pid), '-o', 'command='], { buffer: true, reject: false })
         command = result.stdout
       }
-    } catch { /* Process may already be gone. */ }
+    } catch {
+      /* Process may already be gone. */
+    }
 
     const verified = command.toLowerCase().includes('slidev')
     if (verified) {

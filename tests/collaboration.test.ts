@@ -1,11 +1,10 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import http from 'http'
 import fs from 'fs-extra'
 import os from 'os'
 import path from 'path'
 import net from 'net'
-import { spawn, type ChildProcess } from 'child_process'
 import { execa } from 'execa'
-import getPort from 'get-port'
 import { parse } from 'yaml'
 import { branchFor, isSectionFile, parseManifest } from '../shared/collab'
 import { CollabGit } from '../electron/services/collabGit'
@@ -27,16 +26,23 @@ const manifest = parseManifest({
 const initial = '# Intro\n\nOriginal\n'
 let temp: string
 let origin: string
-let daemon: ChildProcess
+let daemon: http.Server
 let counter = 0
-const git = async (root: string, args: string[]) => (await execa('git', args, { cwd: root })).stdout
+const git = async (root: string, args: string[]) =>
+  (await execa('git', ['-c', 'core.autocrlf=false', ...args], { cwd: root })).stdout
 const setupIdentity = async (root: string) => {
   await git(root, ['config', 'user.name', 'Test'])
   await git(root, ['config', 'user.email', 'test@example.com'])
+  await git(root, ['config', 'core.autocrlf', 'false'])
+  await git(root, ['config', 'commit.gpgsign', 'false'])
 }
 
 beforeAll(async () => {
   temp = await fs.mkdtemp(path.join(os.tmpdir(), 'slidev-collab-test-'))
+  const gitConfig = path.join(temp, 'empty.gitconfig')
+  await fs.writeFile(gitConfig, '')
+  vi.stubEnv('GIT_CONFIG_NOSYSTEM', '1')
+  vi.stubEnv('GIT_CONFIG_GLOBAL', gitConfig)
   const seed = path.join(temp, 'seed')
   await fs.ensureDir(seed)
   await git(seed, ['init', '-b', 'main'])
@@ -53,42 +59,51 @@ beforeAll(async () => {
   await git(seed, ['commit', '-m', 'initial'])
   const bare = path.join(temp, 'presentation.git')
   await git(temp, ['clone', '--bare', seed, bare])
-  const port = await getPort()
-  origin = `git://127.0.0.1:${port}/presentation.git`
-  daemon = spawn(
-    'git',
-    [
-      'daemon',
-      '--reuseaddr',
-      '--export-all',
-      '--enable=receive-pack',
-      `--base-path=${temp}`,
-      '--listen=127.0.0.1',
-      `--port=${port}`,
-      temp
-    ],
-    { stdio: 'ignore' }
-  )
-  await new Promise<void>((resolve, reject) => {
-    const start = Date.now()
-    const connect = () => {
-      const socket = net.connect(port, '127.0.0.1')
-      socket.once('connect', () => {
-        socket.destroy()
-        resolve()
+  await git(bare, ['config', 'http.receivepack', 'true'])
+  daemon = http.createServer(async (req, res) => {
+    try {
+      const chunks: Buffer[] = []
+      for await (const chunk of req) chunks.push(Buffer.from(chunk))
+      const input = Buffer.concat(chunks)
+      const url = new URL(req.url!, 'http://localhost')
+      const result = await execa('git', ['http-backend'], {
+        encoding: 'buffer',
+        input,
+        env: {
+          GIT_PROJECT_ROOT: temp,
+          GIT_HTTP_EXPORT_ALL: '1',
+          REQUEST_METHOD: req.method!,
+          PATH_INFO: decodeURIComponent(url.pathname),
+          QUERY_STRING: url.search.slice(1),
+          CONTENT_TYPE: req.headers['content-type'] || '',
+          CONTENT_LENGTH: String(input.length),
+          REMOTE_USER: 'fixture'
+        }
       })
-      socket.once('error', () => {
-        socket.destroy()
-        if (Date.now() - start > 5000) reject(new Error('Git daemon unavailable'))
-        else setTimeout(connect, 50)
-      })
+      const split = result.stdout.indexOf('\r\n\r\n')
+      const headers = result.stdout.subarray(0, split).toString().split('\r\n')
+      for (const header of headers) {
+        const colon = header.indexOf(':')
+        if (colon > 0) {
+          const name = header.slice(0, colon)
+          const value = header.slice(colon + 1).trim()
+          if (name.toLowerCase() === 'status') res.statusCode = Number(value.split(' ')[0])
+          else res.setHeader(name, value)
+        }
+      }
+      res.end(result.stdout.subarray(split + 4))
+    } catch (error) {
+      res.statusCode = 500
+      res.end(String(error))
     }
-    connect()
   })
+  await new Promise<void>((resolve) => daemon.listen(0, '127.0.0.1', resolve))
+  origin = `http://127.0.0.1:${(daemon.address() as net.AddressInfo).port}/presentation.git`
 }, 20000)
 afterAll(async () => {
-  daemon?.kill()
+  if (daemon) await new Promise<void>((resolve) => daemon.close(() => resolve()))
   if (temp) await fs.remove(temp)
+  vi.unstubAllEnvs()
 })
 async function clone(): Promise<string> {
   const dir = path.join(temp, `clone-${++counter}`)
@@ -137,12 +152,32 @@ describe('manifest and project policy', () => {
     const fm = parse(text.match(/^---\n([\s\S]*?)\n---/)![1])
     expect(fm.fonts.sans).toBe('Noto Sans')
     expect(text).toContain('src: ./sections/01-intro.md')
-    await fs.symlink(temp, path.join(root, 'escape'), 'dir')
+    await fs.symlink(temp, path.join(root, 'escape'), process.platform === 'win32' ? 'junction' : 'dir')
     expect(() => projectFile(root, 'escape/secret.md')).toThrow(/ngoài/)
   })
 })
 
-describe('real Git collaboration through local bare remote', () => {
+describe('real Git collaboration through local bare remote', { timeout: 30000 }, () => {
+  it('submits the assigned branch after committing and pushing, without changing the main branch', async () => {
+    const root = await clone(),
+      submitPr = vi.fn(async () => ({ url: 'https://github.com/fixture/team/pull/1', state: 'open' as const }))
+    const svc = new CollaborationService({
+      getCredentials: async () => undefined,
+      account: async () => ({ login: 'alice', clientId: 'test' }),
+      findPr: async () => undefined,
+      submitPr
+    } as unknown as GitHubService)
+    await svc.select(root, '01-intro')
+    await svc.writeFile(root, path.join(root, 'sections/01-intro.md'), '# Submitted section\n')
+    const result = await svc.submit(root)
+    expect(result.pr?.state).toBe('open')
+    expect(submitPr).toHaveBeenCalledWith(origin, 'feature/alice-01-intro', 'main', expect.stringContaining('01-intro'))
+    const remote = await clone()
+    await git(remote, ['checkout', 'feature/alice-01-intro'])
+    expect(await fs.readFile(path.join(remote, 'sections/01-intro.md'), 'utf8')).toContain('Submitted section')
+    await git(remote, ['checkout', 'main'])
+    expect(await fs.readFile(path.join(remote, 'sections/01-intro.md'), 'utf8')).toBe(initial)
+  })
   it('clones, selects, edits, drafts, pushes and fetches into another checkout', async () => {
     const root = await clone()
     const runner = new CollabGit(root)

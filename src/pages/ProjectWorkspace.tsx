@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
+import { FileContentCache } from '../lib/fileContentCache'
 import {
   ArrowLeft,
   RefreshCw,
@@ -17,9 +18,13 @@ import {
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import type { ImperativePanelHandle, ImperativePanelGroupHandle } from 'react-resizable-panels'
 import { FileTree } from '../components/FileTree'
-import { EditorPane } from '../components/EditorPane'
+const EditorPane = React.lazy(() =>
+  import('../components/EditorPane').then((module) => ({ default: module.EditorPane }))
+)
 import { PreviewPane, PreviewPaneHandle } from '../components/PreviewPane'
-import { ProcessConsole, LogEntry } from '../components/ProcessConsole'
+import { PreviewPool } from '../components/PreviewPool'
+import type { LogEntry } from '../components/ProcessConsole'
+import { LogCount, ConnectedProcessConsole } from '../components/ProcessLogViews'
 import { ExportDialog } from '../components/ExportDialog'
 import api, { ProjectItem, FileNode, ProcessStatusType } from '../ipc-client'
 import { useSettings } from '../settings/SettingsContext'
@@ -45,6 +50,7 @@ export interface OpenTab {
 }
 
 interface ProjectWorkspaceProps {
+  visible?: boolean
   openTabs: OpenTab[]
   activeTabId: string
   onSelectTab: (id: string) => void
@@ -56,6 +62,7 @@ interface ProjectWorkspaceProps {
 
 export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   openTabs,
+  visible = true,
   activeTabId,
   onSelectTab,
   onCloseTab,
@@ -64,18 +71,26 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   onOpenSettings
 }) => {
   const selectedTab = openTabs.find((t) => t.project.id === activeTabId) || openTabs[0]
-  const processSnapshot = useProcessSnapshot(selectedTab?.project.id)
+  const processSnapshot = useProcessSnapshot(selectedTab?.project.id, false)
   const liveStatus = processSnapshot.status
-  const currentTab = useMemo(() => selectedTab ? {
-    ...selectedTab,
-    status: liveStatus?.status || selectedTab.status,
-    serverPort: liveStatus?.port ?? selectedTab.serverPort,
-    serverUrl: liveStatus?.url ?? selectedTab.serverUrl,
-    lanUrl: liveStatus?.lanUrl ?? selectedTab.lanUrl,
-    error: liveStatus ? liveStatus.error : selectedTab.error,
-    logs: processSnapshot.logs
-  } : selectedTab, [selectedTab, liveStatus, processSnapshot.logs])
+  const currentTab = useMemo(
+    () =>
+      selectedTab
+        ? {
+            ...selectedTab,
+            status: liveStatus?.status || selectedTab.status,
+            serverPort: liveStatus?.port ?? selectedTab.serverPort,
+            serverUrl: liveStatus?.url ?? selectedTab.serverUrl,
+            lanUrl: liveStatus?.lanUrl ?? selectedTab.lanUrl,
+            error: liveStatus ? liveStatus.error : selectedTab.error,
+            logs: processSnapshot.logs
+          }
+        : selectedTab,
+    [selectedTab, liveStatus, processSnapshot.logs]
+  )
   const projectId = currentTab?.project.id
+  const activeProjectRef = useRef(projectId)
+  activeProjectRef.current = projectId
   const projectPath = currentTab?.project.path
   const activeEntryFile = selectedTab?.activeEntryFile
 
@@ -85,8 +100,14 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   const [editorReload, setEditorReload] = useState(0)
   const collabStatus = collab?.projectId === projectId ? collab.status : undefined
   const assignedSection = collabStatus?.manifest.sections.find((s) => s.id === collabStatus.sectionId)
-  const relativeEditorFile = selectedTab?.activeFilePath?.replace(/\\/g, '/').slice((projectPath?.replace(/\\/g, '/').length || 0) + 1) || ''
-  const editorReadOnly = collabBusy || collabStatus === undefined || (!!collabStatus && (!assignedSection || assignedSection.owner.toLowerCase() !== collabLogin.toLowerCase() || !isSectionFile(assignedSection, relativeEditorFile)))
+  const relativeEditorFile =
+    selectedTab?.activeFilePath?.replace(/\\/g, '/').slice((projectPath?.replace(/\\/g, '/').length || 0) + 1) || ''
+  const editorReadOnly =
+    collabStatus === undefined ||
+    (!!collabStatus &&
+      (!assignedSection ||
+        assignedSection.owner.toLowerCase() !== collabLogin.toLowerCase() ||
+        !isSectionFile(assignedSection, relativeEditorFile)))
 
   const [fileTree, setFileTree] = useState<FileNode[]>([])
   const [isFileTreeCollapsed, setIsFileTreeCollapsed] = useState<boolean>(false)
@@ -98,9 +119,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   const [isExportOpen, setIsExportOpen] = useState<boolean>(false)
   const [isPortEditing, setIsPortEditing] = useState(false)
   const [portDraft, setPortDraft] = useState('')
-  const [serverRestartNeeded, setServerRestartNeeded] = useState(() => localStorage.getItem('studio-server-settings-pending') === 'true')
+  const [serverRestartNeeded, setServerRestartNeeded] = useState(
+    () => localStorage.getItem('studio-server-settings-pending') === 'true'
+  )
   const [sourceToast, setSourceToast] = useState('')
-  const [restoreTarget, setRestoreTarget] = useState<{ projectId: string; suffix?: string; slideNo?: number } | null>(null)
+  const [restoreTarget, setRestoreTarget] = useState<{ projectId: string; suffix?: string; slideNo?: number } | null>(
+    null
+  )
   const [isRecompiling, setIsRecompiling] = useState(false)
   const fileTreePanelRef = useRef<ImperativePanelHandle>(null)
   const editorPanelRef = useRef<ImperativePanelHandle>(null)
@@ -108,28 +133,38 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   const consolePanelRef = useRef<ImperativePanelHandle>(null)
   const horizontalGroupRef = useRef<ImperativePanelGroupHandle>(null)
   const verticalGroupRef = useRef<ImperativePanelGroupHandle>(null)
+  const sourceCache = useMemo(() => new FileContentCache(api.fs), [])
   const previewRef = useRef<PreviewPaneHandle>(null)
   const editorRef = useRef<EditorPaneHandle>(null)
   const pendingRestoreRef = useRef<{ projectId: string; suffix?: string; slideNo?: number } | null>(null)
   const cursorSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sourceJumpSuppressionRef = useRef<{ file: string; line: number; expiresAt: number } | null>(null)
   const { settings, effectiveThemeId } = useSettings()
-  const activeRestoreTarget = restoreTarget?.projectId === projectId
-    ? restoreTarget
-    : currentTab?.status === 'running' && pendingRestoreRef.current?.projectId === projectId
-      ? pendingRestoreRef.current
-      : null
+  const activeRestoreTarget =
+    restoreTarget?.projectId === projectId
+      ? restoreTarget
+      : currentTab?.status === 'running' && pendingRestoreRef.current?.projectId === projectId
+        ? pendingRestoreRef.current
+        : null
   const compileError = processSnapshot.compileError
 
-  const resolveProjectFile = useCallback((file: string) => {
-    const normalized = file.replace(/\\/g, '/')
-    if (normalized.startsWith('/') || /^[a-z]:\//i.test(normalized)) return normalized
-    return `${projectPath?.replace(/\\/g, '/').replace(/\/$/, '')}/${normalized.replace(/^\.\//, '')}`
-  }, [projectPath])
+  const resolveProjectFile = useCallback(
+    (file: string) => {
+      const normalized = file.replace(/\\/g, '/')
+      if (normalized.startsWith('/') || /^[a-z]:\//i.test(normalized)) return normalized
+      return `${projectPath?.replace(/\\/g, '/').replace(/\/$/, '')}/${normalized.replace(/^\.\//, '')}`
+    },
+    [projectPath]
+  )
 
   const compileErrorMarker = useMemo(() => {
     if (!compileError?.file || !compileError.line) return undefined
-    return { file: resolveProjectFile(compileError.file), line: compileError.line, column: compileError.column, message: compileError.summary }
+    return {
+      file: resolveProjectFile(compileError.file),
+      line: compileError.line,
+      column: compileError.column,
+      message: compileError.summary
+    }
   }, [compileError, resolveProjectFile])
 
   const gotoCompileError = useCallback(async () => {
@@ -143,47 +178,69 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         const slide = parseSlideIndex(entryText, entryPath).find((item) => item.no === compileError.slideNo)
         line = slide?.contentStartLine || 1
         file = entryPath
-      } catch { line = 1; file = entryPath }
+      } catch {
+        line = 1
+        file = entryPath
+      }
     }
     editorPanelRef.current?.expand()
-    editorRef.current?.reveal({ file, line: line || 1, column: compileError.column || 1, length: 0, confidence: 'exact' })
+    editorRef.current?.reveal({
+      file,
+      line: line || 1,
+      column: compileError.column || 1,
+      length: 0,
+      confidence: 'exact'
+    })
   }, [activeEntryFile, compileError, projectPath, resolveProjectFile])
 
-  const handleEditorCursorChange = useCallback((file: string, line: number) => {
-    if (!settings.preview.sourceJump.syncEditorToPreview || !activeEntryFile || !projectPath) return
-    const normalizedFile = file.replace(/\\/g, '/').toLocaleLowerCase()
-    const suppressed = sourceJumpSuppressionRef.current
-    if (suppressed && Date.now() < suppressed.expiresAt && suppressed.file === normalizedFile && suppressed.line === line) {
-      sourceJumpSuppressionRef.current = null
-      return
-    }
-    if (cursorSyncTimerRef.current) clearTimeout(cursorSyncTimerRef.current)
-    cursorSyncTimerRef.current = setTimeout(async () => {
-      const entryFile = `${projectPath.replace(/\\/g, '/').replace(/\/$/, '')}/${activeEntryFile}`
-      try {
-        const entryText = await api.fs.readFile(entryFile)
-        const index = parseSlideIndex(entryText, entryFile)
-        let target = index.find((slide) => normalizedFile === slide.file.replace(/\\/g, '/').toLocaleLowerCase())
-        if (normalizedFile === entryFile.toLocaleLowerCase()) {
-          target = index.find((slide) => line >= slide.contentStartLine && line <= slide.endLine)
-        } else if (target) {
-          const sourceSlides = index.filter((slide) => normalizedFile === slide.file.replace(/\\/g, '/').toLocaleLowerCase())
-          if (sourceSlides.length > 1) {
-            const sourceText = await api.fs.readFile(file)
-            const sourceSlide = parseSlideIndex(sourceText, file).find((slide) => line >= slide.contentStartLine && line <= slide.endLine)
-            if (sourceSlide) target = sourceSlides[sourceSlide.no - 1] || target
-          }
-        }
-        if (target) previewRef.current?.goto(target.no)
-      } catch (error) {
-        console.warn('Không thể đồng bộ con trỏ Editor với Preview:', error)
+  const handleEditorCursorChange = useCallback(
+    (file: string, line: number) => {
+      if (!settings.preview.sourceJump.syncEditorToPreview || !activeEntryFile || !projectPath) return
+      const normalizedFile = file.replace(/\\/g, '/').toLocaleLowerCase()
+      const suppressed = sourceJumpSuppressionRef.current
+      if (
+        suppressed &&
+        Date.now() < suppressed.expiresAt &&
+        suppressed.file === normalizedFile &&
+        suppressed.line === line
+      ) {
+        sourceJumpSuppressionRef.current = null
+        return
       }
-    }, 250)
-  }, [activeEntryFile, projectPath, settings.preview.sourceJump.syncEditorToPreview])
+      if (cursorSyncTimerRef.current) clearTimeout(cursorSyncTimerRef.current)
+      cursorSyncTimerRef.current = setTimeout(async () => {
+        const entryFile = `${projectPath.replace(/\\/g, '/').replace(/\/$/, '')}/${activeEntryFile}`
+        try {
+          const index = await sourceCache.index(entryFile)
+          let target = index.find((slide) => normalizedFile === slide.file.replace(/\\/g, '/').toLocaleLowerCase())
+          if (normalizedFile === entryFile.toLocaleLowerCase()) {
+            target = index.find((slide) => line >= slide.contentStartLine && line <= slide.endLine)
+          } else if (target) {
+            const sourceSlides = index.filter(
+              (slide) => normalizedFile === slide.file.replace(/\\/g, '/').toLocaleLowerCase()
+            )
+            if (sourceSlides.length > 1) {
+              const sourceSlide = (await sourceCache.index(file)).find(
+                (slide) => line >= slide.contentStartLine && line <= slide.endLine
+              )
+              if (sourceSlide) target = sourceSlides[sourceSlide.no - 1] || target
+            }
+          }
+          if (target && activeProjectRef.current === projectId) previewRef.current?.goto(target.no)
+        } catch (error) {
+          console.warn('Không thể đồng bộ con trỏ Editor với Preview:', error)
+        }
+      }, 250)
+    },
+    [activeEntryFile, projectPath, projectId, sourceCache, settings.preview.sourceJump.syncEditorToPreview]
+  )
 
-  useEffect(() => () => {
-    if (cursorSyncTimerRef.current) clearTimeout(cursorSyncTimerRef.current)
-  }, [])
+  useEffect(
+    () => () => {
+      if (cursorSyncTimerRef.current) clearTimeout(cursorSyncTimerRef.current)
+    },
+    [projectId]
+  )
 
   useEffect(() => {
     if (!projectId) return
@@ -206,12 +263,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
   const refreshFileTree = useCallback(async () => {
     if (!projectPath) return
     try {
-      const tree = await api.fs.listTree(projectPath)
+      sourceCache.clear()
+      const tree = await api.fs.listDirectory(projectPath)
       setFileTree(tree)
     } catch (err) {
       console.error('Lỗi nạp cây thư mục:', err)
     }
-  }, [projectPath])
+  }, [projectPath, sourceCache])
 
   useEffect(() => {
     refreshFileTree()
@@ -261,9 +319,13 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     if (!currentTab) return
     const currentSlide = previewRef.current?.getCurrentSlideNo()
     const currentSuffix = previewRef.current?.getCurrentSuffix()
-    pendingRestoreRef.current = !settings.preview.restoreSlideAfterRestart ? null : currentSlide
-      ? { projectId, slideNo: currentSlide, suffix: currentSuffix || undefined }
-      : currentSuffix ? { projectId, suffix: currentSuffix } : null
+    pendingRestoreRef.current = !settings.preview.restoreSlideAfterRestart
+      ? null
+      : currentSlide
+        ? { projectId, slideNo: currentSlide, suffix: currentSuffix || undefined }
+        : currentSuffix
+          ? { projectId, suffix: currentSuffix }
+          : null
     onUpdateTab(projectId, { status: 'starting', error: undefined })
     try {
       const res = await api.process.restart(projectId, projectPath, currentTab.activeEntryFile)
@@ -284,42 +346,55 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     }
   }
 
-  const handleSourceClick = useCallback(async (payload: SourceClickPayload) => {
-    if (!activeEntryFile || !projectPath) return
-    try {
-      const entryFile = `${projectPath.replace(/\/$/, '')}/${activeEntryFile}`
-      const entryText = await api.fs.readFile(entryFile)
-      const entryIndex = parseSlideIndex(entryText, entryFile)
-      const indexedSlide = entryIndex.find((slide) => slide.no === payload.slideNo)
-      const metadataFile = payload.slideMeta?.filepath
-      const file = metadataFile
-        ? resolveSlideFile(entryFile, projectPath, metadataFile)
-        : indexedSlide?.file || entryFile
-      const markdown = file === entryFile ? entryText : await api.fs.readFile(file)
-      const targetIndex = file === entryFile ? entryIndex : parseSlideIndex(markdown, file)
-      let slide = targetIndex.find((item) => item.no === payload.slideNo) || indexedSlide
-      if (!slide) slide = { no: payload.slideNo, startLine: 1, contentStartLine: 1, endLine: markdown.split(/\r?\n/).length, file }
-      slide = { ...slide, file }
-      if (payload.slideMeta?.start && payload.slideMeta.start > 0) {
-        slide = { ...slide, startLine: payload.slideMeta.start, contentStartLine: payload.slideMeta.start }
+  const handleSourceClick = useCallback(
+    async (payload: SourceClickPayload) => {
+      if (!activeEntryFile || !projectPath) return
+      try {
+        const entryFile = `${projectPath.replace(/\/$/, '')}/${activeEntryFile}`
+        const entryText = await sourceCache.read(entryFile)
+        const entryIndex = parseSlideIndex(entryText, entryFile)
+        const indexedSlide = entryIndex.find((slide) => slide.no === payload.slideNo)
+        const metadataFile = payload.slideMeta?.filepath
+        const file = metadataFile
+          ? resolveSlideFile(entryFile, projectPath, metadataFile)
+          : indexedSlide?.file || entryFile
+        const markdown = file === entryFile ? entryText : await sourceCache.read(file)
+        const targetIndex = file === entryFile ? entryIndex : parseSlideIndex(markdown, file)
+        let slide = targetIndex.find((item) => item.no === payload.slideNo) || indexedSlide
+        if (!slide)
+          slide = {
+            no: payload.slideNo,
+            startLine: 1,
+            contentStartLine: 1,
+            endLine: markdown.split(/\r?\n/).length,
+            file
+          }
+        slide = { ...slide, file }
+        if (payload.slideMeta?.start && payload.slideMeta.start > 0) {
+          slide = { ...slide, startLine: payload.slideMeta.start, contentStartLine: payload.slideMeta.start }
+        }
+        const location = locateSource(payload, slide, markdown, file)
+        if (activeProjectRef.current !== projectId) return
+        sourceJumpSuppressionRef.current = {
+          file: location.file.replace(/\\/g, '/').toLocaleLowerCase(),
+          line: location.line,
+          expiresAt: Date.now() + 2500
+        }
+        editorPanelRef.current?.expand()
+        editorRef.current?.reveal(location)
+        if (location.confidence === 'slide')
+          setSourceToast(`Không xác định được vị trí chính xác — đã đưa bạn tới đầu slide ${payload.slideNo}.`)
+        else if (location.confidence === 'fuzzy')
+          setSourceToast(`Đã mở vị trí gần đúng trong slide ${payload.slideNo}.`)
+        else setSourceToast(`Đã mở dòng ${location.line} trong ${location.file.split('/').pop()}.`)
+        setTimeout(() => setSourceToast(''), 3600)
+      } catch (error: any) {
+        setSourceToast(`Không thể tìm source: ${error.message || 'lỗi đọc Markdown'}`)
+        setTimeout(() => setSourceToast(''), 3600)
       }
-      const location = locateSource(payload, slide, markdown, file)
-      sourceJumpSuppressionRef.current = {
-        file: location.file.replace(/\\/g, '/').toLocaleLowerCase(),
-        line: location.line,
-        expiresAt: Date.now() + 2500
-      }
-      editorPanelRef.current?.expand()
-      editorRef.current?.reveal(location)
-      if (location.confidence === 'slide') setSourceToast(`Không xác định được vị trí chính xác — đã đưa bạn tới đầu slide ${payload.slideNo}.`)
-      else if (location.confidence === 'fuzzy') setSourceToast(`Đã mở vị trí gần đúng trong slide ${payload.slideNo}.`)
-      else setSourceToast(`Đã mở dòng ${location.line} trong ${location.file.split('/').pop()}.`)
-      setTimeout(() => setSourceToast(''), 3600)
-    } catch (error: any) {
-      setSourceToast(`Không thể tìm source: ${error.message || 'lỗi đọc Markdown'}`)
-      setTimeout(() => setSourceToast(''), 3600)
-    }
-  }, [activeEntryFile, projectPath])
+    },
+    [activeEntryFile, projectPath, projectId, sourceCache]
+  )
 
   const savePreferredPort = async () => {
     if (!currentTab) return
@@ -334,7 +409,11 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     if (!currentTab || !projectId) return
     const suffix = previewRef.current?.getCurrentSuffix()
     const slideNo = previewRef.current?.getCurrentSlideNo()
-    pendingRestoreRef.current = slideNo ? { projectId, suffix: suffix || undefined, slideNo } : suffix ? { projectId, suffix } : null
+    pendingRestoreRef.current = slideNo
+      ? { projectId, suffix: suffix || undefined, slideNo }
+      : suffix
+        ? { projectId, suffix }
+        : null
     setRestoreTarget(null)
     setIsRecompiling(true)
     onUpdateTab(projectId, { status: 'starting', error: undefined })
@@ -399,10 +478,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
     return (
       <div className="flex flex-col items-center justify-center h-full bg-slate-950 text-slate-400">
         <p className="mb-4">Không có dự án nào đang mở</p>
-        <button
-          onClick={onGoHome}
-          className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs"
-        >
+        <button onClick={onGoHome} className="px-4 py-2 rounded-lg bg-blue-600 text-white text-xs">
           Quay về Dashboard
         </button>
       </div>
@@ -427,6 +503,9 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           return (
             <div
               key={tab.project.id}
+              role="tab"
+              aria-label={tab.project.name}
+              aria-selected={isActive}
               onClick={() => onSelectTab(tab.project.id)}
               className={`group flex items-center gap-2 px-3 py-1.5 rounded-t-lg text-xs cursor-pointer border-t-2 transition-all shrink-0 max-w-[220px] ${
                 isActive
@@ -439,19 +518,17 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   tab.status === 'running'
                     ? 'bg-emerald-400 ring-2 ring-emerald-400/20'
                     : tab.status === 'starting' || tab.status === 'installing'
-                    ? 'bg-amber-400 animate-pulse'
-                    : tab.status === 'error'
-                    ? 'bg-rose-400'
-                    : 'bg-slate-600'
+                      ? 'bg-amber-400 animate-pulse'
+                      : tab.status === 'error'
+                        ? 'bg-rose-400'
+                        : 'bg-slate-600'
                 }`}
                 title={`Trạng thái: ${tab.status}`}
               />
 
               <span className="truncate">{tab.project.name}</span>
 
-              {tab.serverPort && (
-                <span className="text-[10px] text-slate-500 font-mono">:{tab.serverPort}</span>
-              )}
+              {tab.serverPort && <span className="text-[10px] text-slate-500 font-mono">:{tab.serverPort}</span>}
 
               <button
                 onClick={(e) => {
@@ -482,19 +559,44 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             title={isFileTreeCollapsed ? 'Mở thanh cây thư mục' : 'Thu gọn thanh cây thư mục'}
             className="p-1.5 rounded-md hover:bg-slate-800 text-slate-400 hover:text-slate-50 transition-colors"
           >
-            {isFileTreeCollapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
+            {isFileTreeCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
 
           {/* Project Title */}
           <div className="flex items-center gap-2">
             <span className="font-bold text-slate-100 text-sm">{currentTab.project.name}</span>
             <div className="relative">
-              <button onClick={() => { setPortDraft(currentTab.project.preferredPort ? String(currentTab.project.preferredPort) : ''); setIsPortEditing((open) => !open) }} title="Cổng riêng cho dự án" className="rounded border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 hover:text-slate-100">{currentTab.project.preferredPort ? `Port ${currentTab.project.preferredPort}` : 'Mặc định'}</button>
-              {isPortEditing && <div className="absolute left-0 top-7 z-50 w-56 rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-xl"><label className="text-[11px] text-slate-400">Cổng dự án (để trống dùng mặc định)</label><input type="number" min="1024" max="65535" value={portDraft} onChange={(event) => setPortDraft(event.target.value)} className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 font-mono text-xs text-slate-100" /><div className="mt-2 flex justify-end gap-2"><button onClick={() => setIsPortEditing(false)} className="px-2 py-1 text-xs text-slate-400">Hủy</button><button onClick={savePreferredPort} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">Áp dụng</button></div></div>}
+              <button
+                onClick={() => {
+                  setPortDraft(currentTab.project.preferredPort ? String(currentTab.project.preferredPort) : '')
+                  setIsPortEditing((open) => !open)
+                }}
+                title="Cổng riêng cho dự án"
+                className="rounded border border-slate-700 px-1.5 py-0.5 font-mono text-[10px] text-slate-400 hover:text-slate-100"
+              >
+                {currentTab.project.preferredPort ? `Port ${currentTab.project.preferredPort}` : 'Mặc định'}
+              </button>
+              {isPortEditing && (
+                <div className="absolute left-0 top-7 z-50 w-56 rounded-xl border border-slate-700 bg-slate-900 p-3 shadow-xl">
+                  <label className="text-[11px] text-slate-400">Cổng dự án (để trống dùng mặc định)</label>
+                  <input
+                    type="number"
+                    min="1024"
+                    max="65535"
+                    value={portDraft}
+                    onChange={(event) => setPortDraft(event.target.value)}
+                    className="mt-2 w-full rounded-lg border border-slate-700 bg-slate-800 px-2 py-1.5 font-mono text-xs text-slate-100"
+                  />
+                  <div className="mt-2 flex justify-end gap-2">
+                    <button onClick={() => setIsPortEditing(false)} className="px-2 py-1 text-xs text-slate-400">
+                      Hủy
+                    </button>
+                    <button onClick={savePreferredPort} className="rounded bg-blue-600 px-2 py-1 text-xs text-white">
+                      Áp dụng
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -514,9 +616,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 ))}
               </select>
             ) : (
-              <span className="text-slate-300 font-mono text-xs">
-                {currentTab.activeEntryFile}
-              </span>
+              <span className="text-slate-300 font-mono text-xs">{currentTab.activeEntryFile}</span>
             )}
           </div>
 
@@ -527,12 +627,12 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                 currentTab.status === 'running'
                   ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/30'
                   : currentTab.status === 'starting'
-                  ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
-                  : currentTab.status === 'installing'
-                  ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
-                  : currentTab.status === 'error'
-                  ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
-                  : 'bg-slate-800 text-slate-400 border border-slate-700'
+                    ? 'bg-amber-500/10 text-amber-400 border border-amber-500/30'
+                    : currentTab.status === 'installing'
+                      ? 'bg-blue-500/10 text-blue-400 border border-blue-500/30'
+                      : currentTab.status === 'error'
+                        ? 'bg-rose-500/10 text-rose-400 border border-rose-500/30'
+                        : 'bg-slate-800 text-slate-400 border border-slate-700'
               }`}
             >
               <span
@@ -540,21 +640,23 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
                   currentTab.status === 'running'
                     ? 'bg-emerald-400'
                     : currentTab.status === 'starting' || currentTab.status === 'installing'
-                    ? 'bg-amber-400 animate-ping'
-                    : currentTab.status === 'error'
-                    ? 'bg-rose-400'
-                    : 'bg-slate-500'
+                      ? 'bg-amber-400 animate-ping'
+                      : currentTab.status === 'error'
+                        ? 'bg-rose-400'
+                        : 'bg-slate-500'
                 }`}
               />
               {currentTab.status === 'running'
                 ? `Running (Port ${currentTab.serverPort})`
-              : currentTab.status === 'starting'
-                ? isRecompiling ? 'Recompiling (--force)...' : 'Starting DevServer...'
-                : currentTab.status === 'installing'
-                ? 'Installing dependencies...'
-                : currentTab.status === 'error'
-                ? 'Server Error'
-                : 'Server Stopped'}
+                : currentTab.status === 'starting'
+                  ? isRecompiling
+                    ? 'Recompiling (--force)...'
+                    : 'Starting DevServer...'
+                  : currentTab.status === 'installing'
+                    ? 'Installing dependencies...'
+                    : currentTab.status === 'error'
+                      ? 'Server Error'
+                      : 'Server Stopped'}
             </span>
           </div>
         </div>
@@ -590,7 +692,10 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               </button>
             </>
           ) : currentTab.status === 'starting' || currentTab.status === 'installing' ? (
-            <button disabled className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium opacity-80">
+            <button
+              disabled
+              className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-800 text-slate-400 font-medium opacity-80"
+            >
               <Loader2 className="w-3.5 h-3.5 animate-spin" />
               <span>{currentTab.status === 'installing' ? 'Installing…' : 'Starting…'}</span>
             </button>
@@ -628,11 +733,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           >
             <Terminal className="w-3.5 h-3.5" />
             <span>Console</span>
-            {currentTab.logs.length > 0 && (
-              <span className="text-[10px] px-1.5 py-0.2 rounded-full bg-slate-700 text-slate-300">
-                {currentTab.logs.length}
-              </span>
-            )}
+            <LogCount projectId={projectId} />
           </button>
 
           {/* Settings */}
@@ -646,21 +747,41 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         </div>
       </header>
 
-      <CollaborationBar key={projectId} projectId={projectId}
-        flush={async () => { await editorRef.current?.flush() }}
+      <CollaborationBar
+        key={projectId}
+        projectId={projectId}
+        flush={async () => {
+          await editorRef.current?.flush()
+        }}
         onStatus={(status) => setCollab({ projectId, status })}
         onAccount={(login) => setCollabLogin(login)}
         onBusy={setCollabBusy}
-        onReload={() => { setEditorReload((n) => n + 1); void refreshFileTree() }}
+        onReload={() => {
+          setEditorReload((n) => n + 1)
+          void refreshFileTree()
+        }}
         onExport={() => setIsExportOpen(true)}
         onPreview={async (entry, file) => {
-          onUpdateTab(projectId, { activeEntryFile: entry, ...(file ? { activeFilePath: `${projectPath}/${file}` } : {}) })
+          onUpdateTab(projectId, {
+            activeEntryFile: entry,
+            ...(file ? { activeFilePath: `${projectPath}/${file}` } : {})
+          })
           await startDevServer(entry)
-        }} />
-      {serverRestartNeeded && <div className="flex items-center justify-between border-b border-amber-700/50 bg-amber-950/30 px-4 py-2 text-xs text-amber-200"><span>Cấu hình máy chủ đã thay đổi. Khởi động lại để áp dụng.</span><button onClick={restartDevServer} className="rounded bg-amber-600 px-3 py-1 font-medium text-white hover:bg-amber-500">Restart server</button></div>}
+        }}
+      />
+      {serverRestartNeeded && (
+        <div className="flex items-center justify-between border-b border-amber-700/50 bg-amber-950/30 px-4 py-2 text-xs text-amber-200">
+          <span>Cấu hình máy chủ đã thay đổi. Khởi động lại để áp dụng.</span>
+          <button
+            onClick={restartDevServer}
+            className="rounded bg-amber-600 px-3 py-1 font-medium text-white hover:bg-amber-500"
+          >
+            Restart server
+          </button>
+        </div>
+      )}
 
       <PanelGroup
-        key={projectId}
         ref={verticalGroupRef}
         direction="vertical"
         autoSaveId={`workspace-v-${projectId}`}
@@ -704,7 +825,23 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
               <div className="absolute inset-y-0 -left-1 -right-1" />
             </PanelResizeHandle>
             <Panel ref={editorPanelRef} defaultSize={41} minSize={20} className="min-h-0 min-w-0 overflow-hidden">
-              <EditorPane ref={editorRef} readOnly={editorReadOnly} reloadToken={editorReload} filePath={currentTab.activeFilePath} settings={settings.editor} appThemeId={effectiveThemeId} flashMs={settings.preview.sourceJump.flashMs} errorMarker={compileErrorMarker} onCursorChange={handleEditorCursorChange} onFileChange={(file) => onUpdateTab(projectId, { activeFilePath: file })} />
+              <React.Suspense fallback={<div className="p-4 text-sm text-slate-400">Đang tải trình soạn thảo...</div>}>
+                <EditorPane
+                  projectRoot={projectPath}
+                  active={visible}
+                  ref={editorRef}
+                  readOnly={editorReadOnly}
+                  interactionLocked={collabBusy}
+                  reloadToken={editorReload}
+                  filePath={currentTab.activeFilePath}
+                  settings={settings.editor}
+                  appThemeId={effectiveThemeId}
+                  flashMs={settings.preview.sourceJump.flashMs}
+                  errorMarker={compileErrorMarker}
+                  onCursorChange={handleEditorCursorChange}
+                  onFileChange={(file) => onUpdateTab(projectId, { activeFilePath: file })}
+                />
+              </React.Suspense>
             </Panel>
             <PanelResizeHandle
               hitAreaMargins={{ coarse: 12, fine: 4 }}
@@ -716,25 +853,30 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             </PanelResizeHandle>
             <Panel ref={previewPanelRef} defaultSize={41} minSize={20} className="min-h-0 min-w-0 overflow-hidden">
               <ErrorBoundary label="Preview">
-              <PreviewPane
-                ref={previewRef}
-                url={currentTab.serverUrl}
-                lanUrl={currentTab.lanUrl}
-                status={currentTab.status}
-                error={currentTab.error}
-                compileError={processSnapshot.compileError}
-                onGotoError={() => void gotoCompileError()}
-                onDismissCompileError={() => processStore.dismissCompileError(projectId)}
-                isRecompiling={isRecompiling}
-                restoreSuffix={activeRestoreTarget?.suffix || null}
-                restoreSlideNo={settings.preview.restoreSlideAfterRestart ? activeRestoreTarget?.slideNo || null : null}
-                onRestoreComplete={() => {
-                  setRestoreTarget((target) => target?.projectId === projectId ? null : target)
-                }}
-                onRetry={() => startDevServer()}
-                onOpenConsole={() => setConsoleOpen(true)}
-                onSourceClick={handleSourceClick}
-              />
+                <PreviewPool
+                  tabs={openTabs}
+                  projectId={projectId}
+                  visible={visible}
+                  ref={previewRef}
+                  url={currentTab.serverUrl}
+                  lanUrl={currentTab.lanUrl}
+                  status={currentTab.status}
+                  error={currentTab.error}
+                  compileError={processSnapshot.compileError}
+                  onGotoError={() => void gotoCompileError()}
+                  onDismissCompileError={() => processStore.dismissCompileError(projectId)}
+                  isRecompiling={isRecompiling}
+                  restoreSuffix={activeRestoreTarget?.suffix || null}
+                  restoreSlideNo={
+                    settings.preview.restoreSlideAfterRestart ? activeRestoreTarget?.slideNo || null : null
+                  }
+                  onRestoreComplete={() => {
+                    setRestoreTarget((target) => (target?.projectId === projectId ? null : target))
+                  }}
+                  onRetry={() => startDevServer()}
+                  onOpenConsole={() => setConsoleOpen(true)}
+                  onSourceClick={handleSourceClick}
+                />
               </ErrorBoundary>
             </Panel>
           </PanelGroup>
@@ -767,13 +909,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
           }}
           className="min-h-0 min-w-0 overflow-hidden"
         >
-          {isConsoleOpen && (
-            <ProcessConsole
-              logs={currentTab.logs}
-              onClear={() => projectId && processStore.clearLogs(projectId)}
-              onClose={() => setConsoleOpen(false)}
-            />
-          )}
+          {isConsoleOpen && <ConnectedProcessConsole projectId={projectId} onClose={() => setConsoleOpen(false)} />}
         </Panel>
       </PanelGroup>
 
@@ -790,7 +926,11 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
         outputDir={settings.export.outputDir}
         openFolderAfterExport={settings.export.openFolderAfterExport}
       />
-      {sourceToast && <div className="fixed bottom-5 left-1/2 z-[70] -translate-x-1/2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-xs text-slate-100 shadow-xl">{sourceToast}</div>}
+      {sourceToast && (
+        <div className="fixed bottom-5 left-1/2 z-[70] -translate-x-1/2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-xs text-slate-100 shadow-xl">
+          {sourceToast}
+        </div>
+      )}
     </div>
   )
 }
