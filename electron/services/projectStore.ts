@@ -11,6 +11,7 @@ import { portAllocator } from './portFinder'
 import { dataDir } from '../utils/dataDir'
 
 export interface ProjectItem {
+  kind?: 'slidev' | 'latex' | 'markdown-report'
   id: string
   name: string
   path: string
@@ -388,7 +389,7 @@ export class ProjectStore {
     if (typeof partial.trusted === 'boolean') project.trusted = partial.trusted
     if (
       Array.isArray(partial.entryFiles) &&
-      partial.entryFiles.every((file) => typeof file === 'string' && file.endsWith('.md') && !/[\\/]|\.\./.test(file))
+      partial.entryFiles.every((file) => typeof file === 'string' && file.endsWith(project.kind === 'latex' ? '.tex' : '.md') && !/[\\/]|\.\./.test(file) && !file.startsWith('-'))
     ) {
       project.entryFiles = [...partial.entryFiles]
     }
@@ -408,7 +409,7 @@ export class ProjectStore {
 
   public async validateSlidevFolder(
     folderPath: string
-  ): Promise<{ valid: boolean; entryFiles: string[]; reason?: string }> {
+  ): Promise<{ valid: boolean; entryFiles: string[]; kind?: 'slidev' | 'latex' | 'markdown-report'; reason?: string }> {
     if (!fs.existsSync(folderPath)) {
       return { valid: false, entryFiles: [], reason: 'Thư mục không tồn tại' }
     }
@@ -418,6 +419,21 @@ export class ProjectStore {
     }
 
     const files = await fs.readdir(folderPath)
+    if (files.includes('studio-report.json')) {
+      try {
+        const manifest = await fs.readJson(path.join(folderPath, 'studio-report.json'))
+        const entryPattern = manifest.kind === 'markdown-report' ? /^[^\\/]+\.md$/i : /^[^\\/]+\.tex$/i
+        if (manifest.version !== 1 || !['latex', 'markdown-report'].includes(manifest.kind) || typeof manifest.mainFile !== 'string'
+          || !entryPattern.test(manifest.mainFile) || manifest.mainFile.includes('..') || manifest.mainFile.startsWith('-'))
+          throw new Error('invalid')
+        if (!(await fs.stat(path.join(folderPath, manifest.mainFile))).isFile()) throw new Error('missing')
+        return { valid: true, entryFiles: [manifest.mainFile], kind: manifest.kind }
+      } catch { return { valid: false, entryFiles: [], reason: 'studio-report.json hoặc file LaTeX chính không hợp lệ.' } }
+    }
+    if (files.includes('main.tex') && !files.includes('package.json')) {
+      const source = await fs.readFile(path.join(folderPath, 'main.tex'), 'utf8')
+      if (/\\documentclass(?:\[[^\]]*\])?\s*\{/.test(source)) return { valid: true, entryFiles: ['main.tex'], kind: 'latex' }
+    }
     let hasSlidevDep = false
 
     // Check package.json
@@ -515,6 +531,7 @@ export class ProjectStore {
       const existingEntries = Array.isArray(existing.entryFiles) ? existing.entryFiles : []
       const previous = existingEntries.filter((file) => discovered.has(file))
       existing.entryFiles = [...previous, ...validation.entryFiles.filter((file) => !previous.includes(file))]
+      existing.kind = validation.kind || 'slidev'
       this.save()
       return existing
     }
@@ -522,6 +539,7 @@ export class ProjectStore {
     const folderName = path.basename(resolvedPath)
     const newProject: ProjectItem = {
       id: uuidv4(),
+      kind: validation.kind || 'slidev',
       name: folderName,
       path: resolvedPath,
       entryFiles: validation.entryFiles,
@@ -621,6 +639,15 @@ export class ProjectStore {
       suffix += 1
     }
     if (!destinationPath) throw new Error('Không thể tạo tên thư mục bản sao duy nhất.')
+
+    if (sourceValidation.kind === 'latex' || sourceValidation.kind === 'markdown-report') {
+      await fs.copy(sourcePath, destinationPath, {
+        overwrite: false, errorOnExist: true,
+        filter: async (current) => !['.git', 'node_modules', '.studio-latex', '.studio-report'].includes(path.basename(current))
+          && !(await fs.lstat(current)).isSymbolicLink()
+      })
+      return this.addProjectFromFolder(destinationPath, source.trusted ?? false)
+    }
 
     const newId = uuidv4()
     const settings = this.data.settings.server

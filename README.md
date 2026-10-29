@@ -45,6 +45,16 @@
 
 ---
 
+## Báo cáo Markdown / PDF
+
+Chọn **Tạo dự án mới → Báo cáo Markdown → Báo cáo Assignment Bách Khoa**. Toàn bộ nguồn nằm trong `main.md`: YAML đầu file chứa thông tin bìa; heading, bảng, ảnh và công thức được viết bằng Markdown. App dàn trang A4 và xuất PDF bằng Electron có sẵn, không cần TeX/Tectonic hoặc cài thêm npm cho dự án báo cáo.
+
+Workspace có **Lưu & cập nhật PDF**, **Tự cập nhật khi lưu** và **Xuất PDF**. Bìa, mục lục, danh sách hình/bảng và số trang được tạo tự động. Lỗi YAML/ảnh được báo rõ và PDF thành công gần nhất được giữ. [Hướng dẫn cú pháp](electron/templates/dl-assignment-markdown/README.md).
+
+Bố cục HTML/CSS giữ phong cách mẫu báo cáo; ngắt dòng/dàn bảng có thể khác LaTeX. Dự án `.tex` từ bản preview trước vẫn được hỗ trợ khi mở lại, với bộ biên dịch Tectonic riêng.
+
+Kiểm thử Markdown: `npm run build`, `npm run test:desktop:prepare`, rồi `npx playwright test tests/e2e/markdownReports.spec.ts`. Ca Markdown chạy offline với PATH trống. Chỉ ca LaTeX cũ mới cần `npm run test:report:prepare`.
+
 ## 🚀 Khởi chạy ứng dụng
 
 ### 1. Chạy chế độ phát triển (Development)
@@ -145,6 +155,8 @@ Slidev/
 ```
 
 ## Kiểm thử desktop và hiệu năng
+
+Báo cáo mẫu hoàn chỉnh có thể mở trực tiếp từ [examples/dl-assignment1-markdown](examples/dl-assignment1-markdown/README.md), gồm nguồn Markdown và đủ 36 hình sử dụng trong nội dung. Mẫu báo cáo trống được đóng gói tại `electron/templates/dl-assignment-markdown/` và xuất hiện trong wizard **Báo cáo Markdown**.
 
 Monaco và worker được đóng gói cùng ứng dụng để editor hoạt động offline. Workspace giữ bản nháp khi chuyển file, chỉ đóng sau khi xử lý nội dung chưa lưu, và giới hạn hai preview gần dùng.
 

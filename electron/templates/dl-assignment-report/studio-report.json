@@ -1,0 +1,6 @@
+{
+  "version": 1,
+  "kind": "latex",
+  "mainFile": "main.tex",
+  "templateId": "dl-assignment-report"
+}

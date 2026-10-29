@@ -1,3 +1,4 @@
+import { isReportKind } from '../shared/projectKinds'
 import React, { useCallback, useEffect, useRef, useState, lazy, Suspense } from 'react'
 import { HomeDashboard } from './pages/HomeDashboard'
 import type { OpenTab } from './pages/ProjectWorkspace'
@@ -76,12 +77,12 @@ export const App: React.FC = () => {
     }
     openingProjectIds.current.add(project.id)
 
-    const defaultEntry = project.entryFiles[0] || 'slides.md'
+    const defaultEntry = project.entryFiles[0] || (project.kind === 'latex' ? 'main.tex' : project.kind === 'markdown-report' ? 'main.md' : 'slides.md')
     const initialTab: OpenTab = {
       project,
       activeEntryFile: defaultEntry,
       activeFilePath: `${project.path}/${defaultEntry}`,
-      status: 'starting',
+      status: isReportKind(project.kind) ? 'idle' : 'starting',
       logs: []
     }
 
@@ -97,6 +98,11 @@ export const App: React.FC = () => {
     }
     setActiveTabId(project.id)
     setView('workspace')
+
+    if (isReportKind(project.kind)) {
+      openingProjectIds.current.delete(project.id)
+      return
+    }
 
     // Start Dev Server
     try {
@@ -215,6 +221,7 @@ export const App: React.FC = () => {
         localStorage.removeItem('slidev-studio-open-tabs')
       }
       // Stop server
+      if (isReportKind(closing?.project.kind)) await api.reports.cancel(projectId)
       if (settings.server.stopServerOnTabClose) {
         try {
           const stopped = await api.process.stop(projectId)

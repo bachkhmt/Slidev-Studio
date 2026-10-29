@@ -3,6 +3,14 @@ import { DEFAULT_SETTINGS } from '../shared/settings'
 
 // Safe fallback for window.api
 const api: ElectronAPI = (window as any).api || {
+  reports: {
+    compiler: async () => ({ available: false }),
+    installCompiler: async () => { throw new Error('API not available') },
+    status: async (id: string) => ({ projectId: id, state: 'idle', logs: [] }),
+    compile: async () => { throw new Error('API not available') },
+    cancel: async () => {}, readPdf: async () => null, exportPdf: async () => null,
+    onChange: () => () => {}
+  },
   lifecycle: { onPrepareClose: () => () => {}, prepared: () => {}, confirmUnsaved: async () => 'cancel' },
   collab: {
     inspect: async () => null,

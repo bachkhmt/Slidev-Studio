@@ -4,6 +4,7 @@ import type { AppSettings, DeepPartial, ExportFormat, ExportOptions, SettingsGro
 export type { AppSettings, ExportFormat, ExportOptions } from '../shared/settings'
 
 export interface ProjectItem {
+  kind?: 'slidev' | 'latex' | 'markdown-report'
   id: string
   name: string
   path: string
@@ -22,6 +23,7 @@ export interface FileNode {
 }
 
 export interface TemplateInfo {
+  kind?: 'slidev' | 'latex' | 'markdown-report'
   id: string
   name: string
   description: string
@@ -53,6 +55,7 @@ export interface ExportBatchResult {
 }
 
 export interface ElectronAPI {
+  reports: import('../shared/reports').ReportsAPI
   lifecycle: {
     onPrepareClose: (callback: (request: import('../shared/documents').PrepareCloseRequest) => void) => () => void
     prepared: (reply: import('../shared/documents').PrepareCloseReply) => void

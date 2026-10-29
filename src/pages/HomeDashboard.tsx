@@ -165,7 +165,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
                 Desktop
               </span>
             </div>
-            <p className="text-xs text-slate-400">Quản lý và biên tập bài thuyết trình Slidev với Live Preview</p>
+            <p className="text-xs text-slate-400">Biên tập bài thuyết trình Slidev và báo cáo Markdown với preview PDF</p>
           </div>
         </div>
 
@@ -195,7 +195,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <h2 className="text-base font-semibold text-white group-hover:text-blue-400 transition-colors">
                 Mở thư mục có sẵn
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Chọn một repo Slidev đã có trên máy</p>
+                <p className="text-xs text-slate-400 mt-0.5">Mở dự án Slidev hoặc báo cáo Markdown trên máy</p>
             </div>
           </button>
 
@@ -208,9 +208,9 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
             </div>
             <div>
               <h2 className="text-base font-semibold text-white group-hover:text-emerald-400 transition-colors">
-                Tạo project mới
+                  Tạo dự án mới
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Wizard 3 bước từ các theme tuyển chọn</p>
+                <p className="text-xs text-slate-400 mt-0.5">Chọn mẫu slide hoặc báo cáo trong 3 bước</p>
             </div>
           </button>
 
@@ -278,7 +278,7 @@ export const HomeDashboard: React.FC<HomeDashboardProps> = ({
               <div>
                 <h3 className="text-base font-semibold text-slate-100">Chưa có bài thuyết trình nào</h3>
                 <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-                  Hãy mở một thư mục Slidev có sẵn trên máy tính, hoặc tạo bài thuyết trình mới từ các theme có sẵn.
+                    Mở dự án có sẵn hoặc tạo bài thuyết trình, báo cáo từ các mẫu có sẵn.
                 </p>
               </div>
 

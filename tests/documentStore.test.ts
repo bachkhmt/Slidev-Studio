@@ -15,6 +15,18 @@ afterEach(() => {
   vi.useRealTimers()
 })
 describe('revisioned document saves and close policy', () => {
+  it('autosaves report Markdown containing ordinary colon prose without the Slidev guard', async () => {
+    vi.useFakeTimers()
+    const { store, io } = setup()
+    store.configure({ ...DEFAULT_SETTINGS.editor, autoSave: 'afterDelay', autoSaveDelayMs: 100 })
+    await store.load('/report/main.md')
+    store.setMarkdownReport('/report/main.md', true)
+    const content = '---\ntitle: Report\n---\n# Body\n\nNote: ordinary prose.'
+    store.edit('/report/main.md', content)
+    await vi.advanceTimersByTimeAsync(100)
+    expect(io.writeFile).toHaveBeenCalledWith('/report/main.md', content)
+    expect(store.get('/report/main.md').guard).toBeUndefined()
+  })
   it('flushes a project containing clean read-only shared files before selecting a team section', async () => {
     const { store, io } = setup()
     await store.load('/team/slides.md')

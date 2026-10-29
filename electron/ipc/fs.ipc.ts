@@ -13,7 +13,7 @@ export interface FileNode {
   children?: FileNode[]
 }
 
-const IGNORED_NAMES = new Set(['node_modules', '.git', 'dist', '.DS_Store', '.slidev', '.output', '.temp'])
+const IGNORED_NAMES = new Set(['node_modules', '.git', 'dist', '.DS_Store', '.slidev', '.output', '.temp', '.studio-latex', '.studio-report'])
 
 async function buildTree(dirPath: string, depth = 0): Promise<FileNode[]> {
   if (depth > 6) return []

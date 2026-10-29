@@ -18,6 +18,7 @@ import type { SourceLocation } from '../lib/sourceLocator'
 import { getTheme } from '../themes/registry'
 
 interface EditorPaneProps {
+  markdownReport?: boolean
   projectRoot?: string
   active?: boolean
   readOnly?: boolean
@@ -41,6 +42,7 @@ export interface EditorPaneHandle {
 function getLanguageByPath(filePath?: string): string {
   if (!filePath) return 'markdown'
   const lower = filePath.toLowerCase()
+  if (lower.endsWith('.tex') || lower.endsWith('.bib') || lower.endsWith('.sty') || lower.endsWith('.cls')) return 'latex'
   if (lower.endsWith('.md')) return 'markdown'
   if (lower.endsWith('.vue')) return 'html'
   if (lower.endsWith('.json')) return 'json'
@@ -75,6 +77,7 @@ function defineTheme(monaco: any, themeId: string): string {
 export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>((props, ref) => {
   const {
     filePath = '',
+    markdownReport = false,
     settings,
     readOnly = false,
     interactionLocked = false,
@@ -106,9 +109,10 @@ export const EditorPane = forwardRef<EditorPaneHandle, EditorPaneProps>((props, 
   useEffect(() => {
     if (filePath && active) {
       documents.setWritable(filePath, !readOnly)
+      documents.setMarkdownReport(filePath, markdownReport)
       void documents.load(filePath, reloadToken > 0)
     }
-  }, [filePath, readOnly, reloadToken, active])
+  }, [filePath, readOnly, reloadToken, active, markdownReport])
   useEffect(() => {
     const refresh = () => {
       if (latest.current.filePath && latest.current.active !== false) void documents.load(latest.current.filePath)

@@ -8,13 +8,19 @@ import { _electron } from 'playwright'
 export async function launchFixture({
   offline = false,
   entry = path.resolve('out/main/index.js'),
-  executablePath
+  executablePath,
+  environment = {}
 } = {}) {
   const root = await fs.mkdtemp(path.join(os.tmpdir(), 'studio-e2e-'))
   const gitConfig = path.join(root, 'empty.gitconfig')
   await fs.writeFile(gitConfig, '')
   const gitEnv = { GIT_CONFIG_NOSYSTEM: '1', GIT_CONFIG_GLOBAL: gitConfig, GIT_TERMINAL_PROMPT: '0' }
   const home = path.join(root, 'home')
+  if (executablePath) {
+    // Native compiler discovery needs the isolated Windows profile's standard directories.
+    await fs.mkdir(path.join(home, 'AppData', 'Roaming'), { recursive: true })
+    await fs.mkdir(path.join(home, 'AppData', 'Local'), { recursive: true })
+  }
   const projects = []
   for (const count of [30, 100, 300]) {
     const dir = path.join(root, `slides-${count}`)
@@ -72,7 +78,8 @@ export async function launchFixture({
       ...gitEnv,
       ...(executablePath ? { USERPROFILE: home } : {}),
       NODE_ENV: 'test',
-      SLIDEV_STUDIO_TEST_DATA_DIR: path.join(home, '.slidev-studio')
+      SLIDEV_STUDIO_TEST_DATA_DIR: path.join(home, '.slidev-studio'),
+      ...environment
     },
     timeout: 30000
   })

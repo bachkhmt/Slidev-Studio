@@ -1,6 +1,20 @@
 import { contextBridge, ipcRenderer, webFrame } from 'electron'
 
 const api = {
+  reports: {
+    compiler: () => ipcRenderer.invoke('reports:compiler'),
+    installCompiler: () => ipcRenderer.invoke('reports:installCompiler'),
+    status: (id: string) => ipcRenderer.invoke('reports:status', id),
+    compile: (id: string, entry: string) => ipcRenderer.invoke('reports:compile', id, entry),
+    cancel: (id: string) => ipcRenderer.invoke('reports:cancel', id),
+    readPdf: (id: string, entry: string, reference = false) => ipcRenderer.invoke('reports:readPdf', id, entry, reference),
+    exportPdf: (id: string, entry: string) => ipcRenderer.invoke('reports:exportPdf', id, entry),
+    onChange: (callback: (data: import('../shared/reports').ReportSnapshot) => void) => {
+      const listener = (_event: unknown, data: import('../shared/reports').ReportSnapshot) => callback(data)
+      ipcRenderer.on('reports:changed', listener)
+      return () => ipcRenderer.removeListener('reports:changed', listener)
+    }
+  },
   lifecycle: {
     onPrepareClose: (callback: (request: import('../shared/documents').PrepareCloseRequest) => void) => {
       const listener = (_event: unknown, request: import('../shared/documents').PrepareCloseRequest) =>

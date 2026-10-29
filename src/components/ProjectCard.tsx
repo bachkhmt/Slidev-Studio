@@ -1,3 +1,4 @@
+import { isReportKind } from '../../shared/projectKinds'
 import React, { useState } from 'react'
 import { Folder, Play, Trash2, ExternalLink, FileText, Clock, MoreHorizontal, Copy, Loader2 } from 'lucide-react'
 import type { ProjectItem } from '../ipc-client'
@@ -110,7 +111,8 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpen, onRem
             <FileText className="w-3 h-3 text-blue-400" />
             {project.entryFiles.length === 1
               ? project.entryFiles[0]
-              : `${project.entryFiles.length} file trình chiếu`}
+              : `${project.entryFiles.length} ${isReportKind(project.kind) ? 'file báo cáo' : 'file trình chiếu'}`}
+            {isReportKind(project.kind) && (project.kind === 'markdown-report' ? ' · Markdown / PDF' : ' · LaTeX / PDF')}
           </span>
 
           {project.preferredPort && (
@@ -132,7 +134,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({ project, onOpen, onRem
           className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-blue-600/20 text-blue-400 hover:bg-blue-600 hover:text-slate-50 font-medium text-xs transition-colors"
         >
           <Play className="w-3.5 h-3.5 fill-current" />
-          Mở Slidev
+          {isReportKind(project.kind) ? 'Mở báo cáo' : 'Mở Slidev'}
         </button>
       </div>
     </div>
