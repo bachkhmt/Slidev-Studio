@@ -21,6 +21,7 @@ function getCustomThemePackage(theme: string): string {
 }
 
 export interface TemplateInfo {
+  kind?: 'slidev' | 'latex' | 'markdown-report'
   id: string
   name: string
   description: string
@@ -29,6 +30,16 @@ export interface TemplateInfo {
 }
 
 export const BUNDLED_TEMPLATES: TemplateInfo[] = [
+  {
+    id: 'dl-assignment-markdown', kind: 'markdown-report', name: 'Báo cáo Assignment Bách Khoa',
+    description: 'Báo cáo A4 viết bằng Markdown: bìa Bách Khoa, mục lục, bảng/hình và xuất PDF ngay trong app.',
+    theme: 'Markdown · A4 · PDF'
+  },
+  {
+    id: 'dl-assignment-report', kind: 'latex', name: 'Báo cáo Assignment Bách Khoa',
+    description: 'Báo cáo A4 LaTeX: bìa Bách Khoa, mục lục, danh sách hình/bảng và section mẫu.',
+    theme: 'LaTeX · A4'
+  },
   {
     id: 'default',
     name: 'Default Theme',
@@ -136,6 +147,36 @@ export class Scaffolder {
     win?: BrowserWindow | null
   ): Promise<ProjectItem> {
     const { name, targetDir, templateId, title, author } = options
+    if (templateId === 'dl-assignment-report' || templateId === 'dl-assignment-markdown') {
+      const markdown = templateId === 'dl-assignment-markdown'
+      if (!/^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/.test(name)) throw new Error('Tên thư mục chỉ gồm chữ không dấu, số, dấu chấm, gạch ngang hoặc gạch dưới (tối đa 64 ký tự).')
+      if (options.customTheme) throw new Error('Theme Slidev không áp dụng cho báo cáo LaTeX.')
+      const destination = path.resolve(targetDir, name)
+      if (await fs.pathExists(destination)) throw new Error('Thư mục đã tồn tại. Hãy chọn tên khác.')
+      const escapeTex = (value: string) => value.replace(/[\r\n\u0000-\u001f\u007f]/g, '').slice(0, 200).replace(/[\\{}$&#_%~^]/g, (char) => ({
+        '\\': '\\textbackslash{}', '{': '\\{', '}': '\\}', '$': '\\$', '&': '\\&', '#': '\\#',
+        '_': '\\_', '%': '\\%', '~': '\\textasciitilde{}', '^': '\\textasciicircum{}'
+      })[char]!)
+      await fs.copy(path.join(this.getTemplatesDir(), templateId), destination, { overwrite: false, errorOnExist: true })
+      try {
+        const main = path.join(destination, markdown ? 'main.md' : 'main.tex')
+        const cleanText = (value: string) => value.replace(/[\r\n\u0000-\u001f\u007f]/g, '').slice(0, 200)
+        const raw = await fs.readFile(main, 'utf8')
+        const source = markdown ? raw
+          .replace(/"\{\{REPORT_TITLE\}\}"/g, () => JSON.stringify(cleanText(title?.trim() || '[Report Title: Subtitle]')))
+          .replace(/"\{\{AUTHOR\}\}"/g, () => JSON.stringify(cleanText(author?.trim() || '[STUDENT NAME 1]')))
+          : raw
+          .replace(/\{\{REPORT_TITLE\}\}/g, () => escapeTex(title?.trim() || '[Report Title: Subtitle]'))
+          .replace(/\{\{AUTHOR\}\}/g, () => escapeTex(author?.trim() || '[STUDENT NAME 1]'))
+        await fs.writeFile(main, source, 'utf8')
+        const project = await projectStore.addProjectFromFolder(destination, true)
+        win?.webContents.send('scaffold:log', markdown ? 'Đã tạo báo cáo Markdown. Đang mở preview PDF.' : 'Đã tạo báo cáo LaTeX. Mở workspace để biên dịch và xem PDF.')
+        return project
+      } catch (error) {
+        // Keep a partially registered project recoverable instead of deleting user-editable source.
+        throw new Error(`Chưa hoàn tất đăng ký báo cáo tại ${destination}: ${(error as Error).message}`)
+      }
+    }
     const customTheme = options.customTheme?.trim()
     let collabManifest: ReturnType<typeof parseManifest> | undefined
     if (templateId === 'git-collab') {

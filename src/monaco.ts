@@ -25,3 +25,15 @@ self.MonacoEnvironment = {
   }
 }
 loader.config({ monaco })
+
+monaco.languages.register({ id: 'latex', extensions: ['.tex', '.bib', '.sty', '.cls'] })
+monaco.languages.setLanguageConfiguration('latex', {
+  comments: { lineComment: '%' }, brackets: [['{', '}'], ['[', ']'], ['(', ')']],
+  autoClosingPairs: [{ open: '{', close: '}' }, { open: '[', close: ']' }]
+})
+monaco.languages.setMonarchTokensProvider('latex', {
+  tokenizer: { root: [
+    [/%.*$/, 'comment'], [/\\[a-zA-Z@]+\*?/, 'keyword'], [/\\[^a-zA-Z]/, 'keyword'],
+    [/[{}\[\]]/, 'delimiter.bracket'], [/\$\$?|\\\(|\\\)/, 'string'], [/\d+/, 'number']
+  ] }
+})

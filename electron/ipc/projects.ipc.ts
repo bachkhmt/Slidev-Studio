@@ -22,7 +22,7 @@ export function registerProjectsIpc(): void {
     if (!target) {
       const win = BrowserWindow.fromWebContents(event.sender)
       const res = await dialog.showOpenDialog(win || BrowserWindow.getFocusedWindow()!, {
-        title: 'Chọn thư mục Slidev có sẵn',
+        title: 'Chọn thư mục Slidev hoặc báo cáo LaTeX',
         properties: ['openDirectory', 'createDirectory']
       })
       if (res.canceled || res.filePaths.length === 0) {
@@ -36,6 +36,8 @@ export function registerProjectsIpc(): void {
   ipcMain.handle('projects:remove', async (_event, id: string): Promise<boolean> => {
     const project = projectStore.getProject(id)
     if (!project) return false
+
+    if (project.kind === 'latex' || project.kind === 'markdown-report') await (await import('../services/reportManager')).reportManager.release(id)
 
     const stopped = await processManager.stop(id, 'project-removed')
     if (!stopped) throw new Error('Không thể xác nhận máy chủ đã dừng. Dự án vẫn được giữ trong danh sách để thử lại.')
@@ -81,7 +83,8 @@ export function registerProjectsIpc(): void {
     if (partial?.preferredPort === undefined || (Number.isInteger(partial?.preferredPort) && partial.preferredPort! >= 1024 && partial.preferredPort! <= 65535)) {
       if ('preferredPort' in (partial || {})) safe.preferredPort = partial.preferredPort
     }
-    if (Array.isArray(partial?.entryFiles) && partial.entryFiles.every((file) => typeof file === 'string' && file.endsWith('.md') && !/[\\/]|\.\./.test(file))) {
+    const entryExtension = projectStore.getProject(id)?.kind === 'latex' ? '.tex' : '.md'
+    if (Array.isArray(partial?.entryFiles) && partial.entryFiles.every((file) => typeof file === 'string' && file.endsWith(entryExtension) && !/[\\/]|\.\./.test(file) && !file.startsWith('-'))) {
       safe.entryFiles = partial.entryFiles
     }
     return projectStore.updateProject(id, safe)

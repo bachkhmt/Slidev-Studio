@@ -18,10 +18,12 @@ let appInitialized = false
 const closeCoordinator = registerCloseCoordinator(async () => {
   projectStore?.flushSettings()
   await processManager?.stopAll()
+  await reportManager?.stopAll()
   app.exit(0)
 })
 let projectStore: typeof import('./services/projectStore').projectStore | null = null
 let processManager: typeof import('./services/processManager').processManager | null = null
+let reportManager: typeof import('./services/reportManager').reportManager | null = null
 let getSettingsBackgroundColor: typeof import('./services/themeColors').getSettingsBackgroundColor | null = null
 
 function currentLanHost(): string | undefined {
@@ -214,6 +216,9 @@ app.whenReady().then(async () => {
   settingsIpc.registerSettingsIpc()
   const collabIpc = await import('./ipc/collab.ipc')
   collabIpc.registerCollabIpc()
+  const reportsIpc = await import('./ipc/reports.ipc')
+  reportsIpc.registerReportsIpc()
+  reportManager = (await import('./services/reportManager')).reportManager
   await pidRegistry.reapOrphans()
   createWindow()
   appInitialized = true

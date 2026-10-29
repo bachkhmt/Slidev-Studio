@@ -66,6 +66,8 @@ try {
     'apple-basic',
     'bricks',
     'default',
+    'dl-assignment-markdown',
+    'dl-assignment-report',
     'dracula',
     'frankfurt-academic',
     'git-collab',

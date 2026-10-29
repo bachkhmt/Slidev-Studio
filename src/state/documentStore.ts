@@ -17,6 +17,7 @@ type Entry = {
   writes: Promise<void>
   timer?: ReturnType<typeof setTimeout>
   writable: boolean
+  markdownReport?: boolean
   stamp?: FileStamp
 }
 type IO = {
@@ -97,6 +98,10 @@ export class DocumentStore {
     this.get(path)
     this.entries.get(documentKey(path))!.writable = writable
   }
+  setMarkdownReport(path: string, enabled: boolean) {
+    this.get(path)
+    this.entries.get(documentKey(path))!.markdownReport = enabled
+  }
   edit(path: string, content: string) {
     this.get(path)
     const entry = this.entries.get(documentKey(path))!
@@ -125,6 +130,7 @@ export class DocumentStore {
     }, this.settings.autoSaveDelayMs)
   }
   private guarded(entry: Entry) {
+    if (entry.markdownReport) return false
     if (!this.settings?.autoSaveGuard || !entry.snapshot.path.toLowerCase().endsWith('.md')) return false
     const check = checkSlideMarkdown(entry.snapshot.content)
     if (!check.ok) {

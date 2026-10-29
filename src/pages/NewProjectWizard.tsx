@@ -23,6 +23,7 @@ interface NewProjectWizardProps {
 
 export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, onCreated }) => {
   const [step, setStep] = useState<number>(1)
+  const [projectKind, setProjectKind] = useState<'slidev' | 'markdown-report'>('slidev')
   const [name, setName] = useState<string>('')
   const [targetDir, setTargetDir] = useState<string>('')
   const [templateId, setTemplateId] = useState<string>('default')
@@ -47,7 +48,7 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
     })
     api.scaffold.listTemplates().then((tpls) => {
       setTemplates(tpls)
-      if (tpls.length > 0) setTemplateId(tpls[0].id)
+      if (tpls.length > 0) setTemplateId(tpls.find((tpl) => !tpl.kind || tpl.kind === 'slidev')?.id || tpls[0].id)
     })
 
     const cleanup = api.scaffold.onLog((text) => {
@@ -83,8 +84,8 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
         targetDir: targetDir.trim(),
         templateId: templateId === 'git-collab' ? templateId : customTheme.trim() ? 'default' : templateId,
         ...(templateId === 'git-collab' ? { collabOwners: collabOwners.map((s) => s.trim()), collabCoordinator: collabCoordinator.trim() } : {}),
-        title: cleanMetadata(title).trim() || name.trim(),
-        author: cleanMetadata(author).trim() || 'Slidev Author',
+        title: cleanMetadata(title).trim() || (projectKind === 'markdown-report' ? '[Report Title: Subtitle]' : name.trim()),
+        author: cleanMetadata(author).trim() || (projectKind === 'markdown-report' ? '[STUDENT NAME 1]' : 'Slidev Author'),
         ...(customTheme.trim() ? { customTheme: customTheme.trim() } : {})
       })
       onCreated(newProj)
@@ -126,8 +127,8 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
             <Sparkles className="w-6 h-6" />
           </div>
           <div>
-            <h1 className="text-xl font-bold tracking-tight text-white">Khởi tạo bài thuyết trình mới</h1>
-            <p className="text-xs text-slate-400">Tạo dự án Slidev từ các theme tuyển chọn, sẵn sàng live-edit</p>
+            <h1 className="text-xl font-bold tracking-tight text-white">Khởi tạo dự án mới</h1>
+            <p className="text-xs text-slate-400">Tạo bài thuyết trình Slidev hoặc báo cáo Markdown có preview PDF</p>
           </div>
         </div>
 
@@ -135,8 +136,8 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
         <div className="flex items-center gap-3">
           {[
             { num: 1, label: 'Tên & Vị trí' },
-            { num: 2, label: 'Chọn Theme' },
-            { num: 3, label: 'Thông tin Slide' }
+            { num: 2, label: 'Chọn mẫu' },
+            { num: 3, label: projectKind === 'markdown-report' ? 'Thông tin báo cáo' : 'Thông tin Slide' }
           ].map((s) => (
             <div key={s.num} className="flex items-center gap-2">
               <div
@@ -169,6 +170,21 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
                 <h2 className="text-lg font-semibold text-slate-100 mb-1">Bước 1: Tên dự án & Vị trí lưu</h2>
                 <p className="text-xs text-slate-400">Chọn tên thư mục và nơi lưu trữ tệp tin trên máy tính</p>
               </div>
+
+              <fieldset className="space-y-2">
+                <legend className="mb-2 text-xs font-semibold text-slate-300">Loại dự án</legend>
+                <div className="grid grid-cols-2 gap-3">
+                  {([{ kind: 'slidev', label: 'Bài thuyết trình Slidev', description: 'Markdown và live preview slide' }, { kind: 'markdown-report', label: 'Báo cáo Markdown', description: 'Báo cáo A4 và xem trước PDF' }] as const).map((option) => <label key={option.kind} className={`cursor-pointer rounded-xl border p-4 ${projectKind === option.kind ? 'border-blue-500 bg-blue-600/10' : 'border-slate-700 bg-slate-800/40'}`}>
+                    <input type="radio" name="project-kind" value={option.kind} checked={projectKind === option.kind} onChange={() => {
+                      setProjectKind(option.kind)
+                      setCustomTheme('')
+                      setTemplateId(option.kind === 'markdown-report' ? 'dl-assignment-markdown' : 'default')
+                    }} className="mr-2" />
+                    <span className="text-sm font-medium">{option.label}</span>
+                    <p className="mt-1 text-xs text-slate-400">{option.description}</p>
+                  </label>)}
+                </div>
+              </fieldset>
 
               <div className="space-y-4">
                 <div>
@@ -218,12 +234,12 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
           {step === 2 && (
             <div className="space-y-6">
               <div>
-                <h2 className="text-lg font-semibold text-slate-100 mb-1">Bước 2: Chọn phong cách thiết kế (Theme)</h2>
+                <h2 className="text-lg font-semibold text-slate-100 mb-1">{projectKind === 'markdown-report' ? 'Bước 2: Chọn mẫu báo cáo' : 'Bước 2: Chọn phong cách thiết kế (Theme)'}</h2>
                 <p className="text-xs text-slate-400">App đã bundle sẵn các template tối ưu mà không cần tương tác CLI</p>
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {templates.map((tpl) => (
+                {templates.filter((tpl) => (tpl.kind || 'slidev') === projectKind).map((tpl) => (
                   <div
                     key={tpl.id}
                     onClick={() => {
@@ -253,14 +269,14 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-slate-800/80 flex items-center justify-between text-[11px] text-slate-500">
-                      <span>Theme: {tpl.theme}</span>
-                      <span className="text-blue-400">Sẵn sàng compile</span>
+                      <span>{tpl.kind === 'markdown-report' ? tpl.theme : `Theme: ${tpl.theme}`}</span>
+                      <span className="text-blue-400">{tpl.kind === 'markdown-report' ? 'Bản báo cáo · PDF' : 'Sẵn sàng compile'}</span>
                     </div>
                   </div>
                 ))}
               </div>
 
-              <div className={`rounded-xl border p-4 transition-colors ${customTheme.trim() ? 'border-blue-500/60 bg-blue-600/10' : 'border-slate-800 bg-slate-800/30'}`}>
+              {projectKind === 'slidev' && <div className={`rounded-xl border p-4 transition-colors ${customTheme.trim() ? 'border-blue-500/60 bg-blue-600/10' : 'border-slate-800 bg-slate-800/30'}`}>
                 <label className="block text-xs font-semibold uppercase tracking-wider text-slate-300 mb-2">
                   Theme tuỳ chỉnh (nâng cao)
                 </label>
@@ -276,7 +292,7 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
                     ? `Dự án sẽ dùng Default làm khung và đặt theme: ${customTheme.trim()}`
                     : 'Nhập tên theme đã phát hành trên npm. Dự án sẽ dùng template Default làm khung.'}
                 </p>
-              </div>
+              </div>}
             </div>
           )}
 
@@ -285,14 +301,14 @@ export const NewProjectWizard: React.FC<NewProjectWizardProps> = ({ onCancel, on
             <div className="space-y-6">
               <div>
                 <h2 className="text-lg font-semibold text-slate-100 mb-1">Bước 3: Tiêu đề & Tác giả</h2>
-                <p className="text-xs text-slate-400">Thông tin này sẽ được điền tự động vào trang bìa slides.md</p>
+                <p className="text-xs text-slate-400">{projectKind === 'markdown-report' ? 'Điền tiêu đề và tác giả vào bìa. Các thông tin môn học, lớp, giảng viên và MSSV có thể sửa trong main.tex.' : 'Thông tin này sẽ được điền tự động vào trang bìa slides.md'}</p>
               </div>
 
               <div className="space-y-4">
                 {templateId === 'git-collab' && <div className="space-y-3 rounded-xl border border-blue-800 p-4"><p className="text-sm text-blue-300">Phân công bằng tài khoản GitHub</p><label className="block text-xs">Điều phối<input value={collabCoordinator} onChange={(e) => setCollabCoordinator(e.target.value)} placeholder="github-login" className="mt-1 block w-full rounded border border-slate-700 bg-slate-800 px-3 py-2" /></label>{['01-intro', '02-analysis', '03-demo'].map((id, i) => <label key={id} className="block text-xs">{id}<input value={collabOwners[i]} onChange={(e) => setCollabOwners((owners) => owners.map((v, n) => n === i ? e.target.value : v))} placeholder="Tài khoản GitHub người phụ trách" className="mt-1 block w-full rounded border border-slate-700 bg-slate-800 px-3 py-2" /></label>)}</div>}
                 <div>
                   <label className="block text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                    Tiêu đề bài thuyết trình
+                    {projectKind === 'markdown-report' ? 'Tiêu đề báo cáo' : 'Tiêu đề bài thuyết trình'}
                   </label>
                   <input
                     type="text"

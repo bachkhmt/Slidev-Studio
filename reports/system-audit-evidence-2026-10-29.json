@@ -1,0 +1,278 @@
+{
+  "auditDate": "2026-10-29",
+  "timeZone": "Asia/Bangkok",
+  "generatedAt": "2026-10-29T07:07:51.491Z",
+  "commit": "2835d28ffa08a43af0daad1ebbbfa02248356d6a",
+  "appVersion": "1.0.2",
+  "checks": {
+    "typecheck": "passed",
+    "lint": "passed",
+    "unitTests": {
+      "passed": 117,
+      "total": 117,
+      "files": 24
+    },
+    "build": "passed",
+    "electronE2e": {
+      "initialPassed": 7,
+      "initialFailed": 1,
+      "total": 8,
+      "failure": "Collaboration save-draft button remained disabled past 15-second assertion timeout while other diagnostic work was running.",
+      "originalCollaborationRerun": "passed",
+      "instrumentedCollaborationRerun": "passed"
+    },
+    "exportSmoke": [
+      {
+        "format": "pdf",
+        "success": true,
+        "pages": 3,
+        "bytes": 30474,
+        "durationMs": 17545.7906
+      },
+      {
+        "format": "pptx",
+        "success": true,
+        "bytes": 98285,
+        "durationMs": 5796.366900000001
+      },
+      {
+        "format": "build",
+        "success": true,
+        "bytes": 1010,
+        "durationMs": 3739.7057999999997
+      }
+    ]
+  },
+  "probes": {
+    "classes": [
+      {
+        "check": "remember-trust",
+        "expectedProjectId": "fixture-project",
+        "actualUpdate": {
+          "id": "1793278800000",
+          "patch": {
+            "trusted": true
+          }
+        }
+      },
+      {
+        "check": "external-write-conflict",
+        "expected": "conflict detected before overwrite",
+        "actualDisk": "local unsaved draft",
+        "error": null
+      },
+      {
+        "check": "four-backtick-fence-index",
+        "expectedSlides": 2,
+        "expectedSecondSlideLine": 10,
+        "actualRanges": [
+          {
+            "no": 1,
+            "startLine": 1,
+            "contentStartLine": 1,
+            "endLine": 4,
+            "file": "slides.md"
+          },
+          {
+            "no": 2,
+            "startLine": 6,
+            "contentStartLine": 6,
+            "endLine": 10,
+            "file": "slides.md"
+          }
+        ]
+      }
+    ],
+    "electron": [
+      {
+        "check": "binary-open-edit-save",
+        "originalBytes": 41016,
+        "savedBytes": 60617,
+        "originalHeader": "89504e470d0a1a0a",
+        "savedHeader": "efbfbd504e470a1a",
+        "corrupted": true
+      },
+      {
+        "check": "export-unsaved-content-through-ui",
+        "markerInEditor": true,
+        "markerOnDiskBefore": false,
+        "markerOnDiskAfter": false,
+        "markerInExportedBundle": false,
+        "exportSucceeded": true
+      },
+      {
+        "check": "reveal-output-outside-project",
+        "ok": false,
+        "error": "Error: Error invoking remote method 'fs:showInFolder': Error: Đường dẫn nằm ngoài các dự án đã đăng ký"
+      },
+      {
+        "check": "three-open-projects",
+        "runningServers": 3,
+        "webviews": 2
+      }
+    ],
+    "exportOutputs": [
+      {
+        "check": "build-into-existing-source-assets",
+        "success": true,
+        "sentinelExistsAfter": false,
+        "buildIndexExists": true
+      },
+      {
+        "check": "build-default-output-path",
+        "returnedDirectory": "export",
+        "returnedIndexExists": false,
+        "actualDistIndexExists": true
+      }
+    ],
+    "markdownGuard": {
+      "input": "---\ntheme: default\n---\n# Title\n\nNote: this is ordinary slide content.\n",
+      "result": {
+        "ok": false,
+        "line": 3,
+        "reason": "Frontmatter chưa được đóng bằng ---"
+      }
+    }
+  },
+  "memory": {
+    "method": "Single clean offline session. Samples after each project server and guest preview become ready. Electron app.getAppMetrics privateBytes in KiB, Windows Get-Process PrivateMemorySize64 for direct Slidev PIDs. Not repeated benchmarks, post-GC steady state, or full descendant tree.",
+    "samples": [
+      {
+        "stage": "home",
+        "runningServers": 0,
+        "webviews": 0,
+        "electronPrivateMiB": 197,
+        "slidevDirectChildrenPrivateMiB": 0
+      },
+      {
+        "stage": "open-through-30",
+        "runningServers": 1,
+        "webviews": 1,
+        "electronPrivateMiB": 460,
+        "slidevDirectChildrenPrivateMiB": 1284
+      },
+      {
+        "stage": "open-through-100",
+        "runningServers": 2,
+        "webviews": 2,
+        "electronPrivateMiB": 542,
+        "slidevDirectChildrenPrivateMiB": 2588
+      },
+      {
+        "stage": "open-through-300",
+        "runningServers": 3,
+        "webviews": 2,
+        "electronPrivateMiB": 594,
+        "slidevDirectChildrenPrivateMiB": 3778
+      }
+    ]
+  },
+  "dependencyAudit": {
+    "all": {
+      "info": 0,
+      "low": 0,
+      "moderate": 7,
+      "high": 13,
+      "critical": 5,
+      "total": 25
+    },
+    "omitDev": {
+      "info": 0,
+      "low": 0,
+      "moderate": 1,
+      "high": 2,
+      "critical": 2,
+      "total": 5
+    },
+    "caveat": "Package-tree alerts; not proven exploitability or a count of independent vulnerabilities. devDependencies can execute in the packaged app.",
+    "directFlaggedPackages": [
+      {
+        "name": "electron",
+        "severity": "high",
+        "range": "<=42.11.15 || 43.0.0-alpha.1 - 43.0.0-beta.8",
+        "fixAvailable": {
+          "name": "electron",
+          "version": "45.1.0",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "electron-builder",
+        "severity": "high",
+        "range": "19.25.0 || 19.28.0 - 26.14.0",
+        "fixAvailable": {
+          "name": "electron-builder",
+          "version": "26.18.0",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "electron-vite",
+        "severity": "moderate",
+        "range": "<=3.0.0",
+        "fixAvailable": {
+          "name": "electron-vite",
+          "version": "6.0.0",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "monaco-editor",
+        "severity": "moderate",
+        "range": "0.54.0-dev-20250909 - 0.56.0-dev-20260625",
+        "fixAvailable": {
+          "name": "monaco-editor",
+          "version": "0.57.0",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "simple-git",
+        "severity": "critical",
+        "range": "<=4.0.1",
+        "fixAvailable": {
+          "name": "simple-git",
+          "version": "4.0.2",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "uuid",
+        "severity": "moderate",
+        "range": "<11.1.1",
+        "fixAvailable": {
+          "name": "uuid",
+          "version": "14.0.3",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "vite",
+        "severity": "high",
+        "range": "<=6.4.3",
+        "fixAvailable": {
+          "name": "vite",
+          "version": "8.3.5",
+          "isSemVerMajor": true
+        }
+      },
+      {
+        "name": "vitest",
+        "severity": "critical",
+        "range": "<=4.1.10",
+        "fixAvailable": {
+          "name": "vitest",
+          "version": "5.0.5",
+          "isSemVerMajor": true
+        }
+      }
+    ]
+  },
+  "scope": {
+    "functionalSourceChanged": false,
+    "realProjectDataModified": false,
+    "packagedInstallerRetested": false,
+    "macOSLinuxRetested": false,
+    "latencyBenchmarkRepeated": false
+  }
+}

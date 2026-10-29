@@ -12,6 +12,8 @@ reports/export-smoke.json
 reports/release.json
 out
 dist
+output/
+tmp/
 .DS_Store
 *.local
 .env

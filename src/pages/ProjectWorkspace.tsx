@@ -1,3 +1,4 @@
+import { isReportKind } from '../../shared/projectKinds'
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { FileContentCache } from '../lib/fileContentCache'
 import {
@@ -18,6 +19,8 @@ import {
 import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels'
 import type { ImperativePanelHandle, ImperativePanelGroupHandle } from 'react-resizable-panels'
 import { FileTree } from '../components/FileTree'
+import { WorkspaceTabs } from '../components/WorkspaceTabs'
+const ReportWorkspace = React.lazy(() => import('./ReportWorkspace').then((module) => ({ default: module.ReportWorkspace })))
 const EditorPane = React.lazy(() =>
   import('../components/EditorPane').then((module) => ({ default: module.EditorPane }))
 )
@@ -49,7 +52,7 @@ export interface OpenTab {
   error?: string
 }
 
-interface ProjectWorkspaceProps {
+export interface ProjectWorkspaceProps {
   visible?: boolean
   openTabs: OpenTab[]
   activeTabId: string
@@ -60,7 +63,7 @@ interface ProjectWorkspaceProps {
   onOpenSettings: () => void
 }
 
-export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
+const SlidevWorkspace: React.FC<ProjectWorkspaceProps> = ({
   openTabs,
   visible = true,
   activeTabId,
@@ -487,63 +490,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
 
   return (
     <div className="flex flex-col h-full bg-slate-950 text-slate-100 overflow-hidden">
-      {/* Top Multi-Project Tab Bar */}
-      <div className="app-chrome flex items-center bg-slate-900 border-b border-slate-800 px-2 pt-1.5 gap-1 overflow-x-auto select-none">
-        <button
-          onClick={onGoHome}
-          title="Về màn hình chính (Home Dashboard)"
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-t-lg bg-slate-800/50 hover:bg-slate-800 text-slate-400 hover:text-slate-50 text-xs font-medium transition-colors mr-1 shrink-0"
-        >
-          <ArrowLeft className="w-3.5 h-3.5" />
-          <span>Home</span>
-        </button>
-
-        {openTabs.map((tab) => {
-          const isActive = tab.project.id === activeTabId
-          return (
-            <div
-              key={tab.project.id}
-              role="tab"
-              aria-label={tab.project.name}
-              aria-selected={isActive}
-              onClick={() => onSelectTab(tab.project.id)}
-              className={`group flex items-center gap-2 px-3 py-1.5 rounded-t-lg text-xs cursor-pointer border-t-2 transition-all shrink-0 max-w-[220px] ${
-                isActive
-                  ? 'bg-slate-950 border-blue-500 text-slate-100 font-medium shadow-sm'
-                  : 'bg-slate-900/60 border-transparent text-slate-400 hover:bg-slate-800/60 hover:text-slate-200'
-              }`}
-            >
-              <div
-                className={`w-2 h-2 rounded-full shrink-0 ${
-                  tab.status === 'running'
-                    ? 'bg-emerald-400 ring-2 ring-emerald-400/20'
-                    : tab.status === 'starting' || tab.status === 'installing'
-                      ? 'bg-amber-400 animate-pulse'
-                      : tab.status === 'error'
-                        ? 'bg-rose-400'
-                        : 'bg-slate-600'
-                }`}
-                title={`Trạng thái: ${tab.status}`}
-              />
-
-              <span className="truncate">{tab.project.name}</span>
-
-              {tab.serverPort && <span className="text-[10px] text-slate-500 font-mono">:{tab.serverPort}</span>}
-
-              <button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onCloseTab(tab.project.id)
-                }}
-                title="Đóng tab này"
-                className="p-0.5 rounded hover:bg-slate-800 opacity-60 group-hover:opacity-100 text-slate-400 hover:text-slate-50"
-              >
-                <X className="w-3 h-3" />
-              </button>
-            </div>
-          )
-        })}
-      </div>
+      <WorkspaceTabs tabs={openTabs} activeId={activeTabId} onSelect={onSelectTab} onClose={onCloseTab} onHome={onGoHome} />
 
       {/* Main Workspace Navigation & Toolbar */}
       <header className="app-chrome flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-xs">
@@ -854,7 +801,7 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
             <Panel ref={previewPanelRef} defaultSize={41} minSize={20} className="min-h-0 min-w-0 overflow-hidden">
               <ErrorBoundary label="Preview">
                 <PreviewPool
-                  tabs={openTabs}
+                  tabs={openTabs.filter((tab) => !isReportKind(tab.project.kind))}
                   projectId={projectId}
                   visible={visible}
                   ref={previewRef}
@@ -933,4 +880,11 @@ export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = ({
       )}
     </div>
   )
+}
+
+export const ProjectWorkspace: React.FC<ProjectWorkspaceProps> = (props) => {
+  const selected = props.openTabs.find((tab) => tab.project.id === props.activeTabId) || props.openTabs[0]
+  return isReportKind(selected?.project.kind)
+    ? <ReportWorkspace key={selected!.project.id} {...props} />
+    : <SlidevWorkspace {...props} />
 }

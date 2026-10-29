@@ -57,6 +57,34 @@ describe('PortAllocator', () => {
 })
 
 describe('ProjectStore settings and paths', () => {
+  it('recognizes Markdown report manifests without classifying them as Slidev', async () => {
+    const folder = fs.mkdtempSync(path.join(testHome, 'md-report-'))
+    fs.writeFileSync(path.join(folder, 'main.md'), '---\nreport: dl-assignment\ntitle: Test\n---\n# Body')
+    fs.writeJsonSync(path.join(folder, 'studio-report.json'), { version: 1, kind: 'markdown-report', mainFile: 'main.md' })
+    const store = Object.create(ProjectStoreType.prototype) as any
+    store.data = { projects: [], settings: structuredClone(DEFAULT_SETTINGS) }
+    store.save = () => {}
+    const project = await store.addProjectFromFolder(folder)
+    expect(project.kind).toBe('markdown-report')
+    expect(project.entryFiles).toEqual(['main.md'])
+  })
+  it('detects existing LaTeX reports and preserves their kind when reopened', async () => {
+    const folder = fs.mkdtempSync(path.join(testHome, 'latex-report-'))
+    fs.writeFileSync(path.join(folder, 'main.tex'), '\\documentclass{article}\\begin{document}Report\\end{document}')
+    const store = Object.create(ProjectStoreType.prototype) as any
+    store.data = { projects: [], settings: structuredClone(DEFAULT_SETTINGS) }
+    store.save = () => {}
+    const added = await store.addProjectFromFolder(folder)
+    expect(added.kind).toBe('latex')
+    expect(added.entryFiles).toEqual(['main.tex'])
+    expect((await store.addProjectFromFolder(folder)).id).toBe(added.id)
+  })
+  it('rejects a report manifest that points outside the project', async () => {
+    const folder = fs.mkdtempSync(path.join(testHome, 'latex-manifest-'))
+    fs.writeJsonSync(path.join(folder, 'studio-report.json'), { version: 1, kind: 'latex', mainFile: '../secret.tex' })
+    const store = Object.create(ProjectStoreType.prototype) as any
+    await expect(store.addProjectFromFolder(folder)).rejects.toThrow('không hợp lệ')
+  })
   it('deep merges and sanitizes settings without mutating shared defaults', () => {
     const store = Object.create(ProjectStoreType.prototype) as any
     store.data = { settings: structuredClone(DEFAULT_SETTINGS) }

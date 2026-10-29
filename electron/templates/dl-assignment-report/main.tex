@@ -1,0 +1,431 @@
+\documentclass[a4paper, 11pt]{article}
+
+% Times typography, with Unicode support in Tectonic/XeLaTeX.
+\usepackage{mathptmx}
+\usepackage{iftex}
+\ifPDFTeX
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+% Declare missing Vietnamese Unicode chars for pdflatex
+% (circumflex+tone combinations not in standard T1)
+\DeclareUnicodeCharacter{1EA6}{\`{\^A}}  % Ầ
+\DeclareUnicodeCharacter{1ED2}{\`{\^O}}  % Ồ
+\DeclareUnicodeCharacter{1EC4}{\~{\^E}}  % Ễ
+\DeclareUnicodeCharacter{1EC6}{\d{\^E}}  % Ệ
+\DeclareUnicodeCharacter{1EAB}{\~{\^a}}  % ẫ
+\DeclareUnicodeCharacter{1EA7}{\`{\^a}}  % ầ
+\DeclareUnicodeCharacter{1ED3}{\`{\^o}}  % ồ
+\DeclareUnicodeCharacter{1EC5}{\~{\^e}}  % ễ
+\DeclareUnicodeCharacter{1EC7}{\d{\^e}}  % ệ
+% Standard accented + Vietnamese base chars (T1 covers these)
+\DeclareUnicodeCharacter{00C0}{\`A}   % À
+\DeclareUnicodeCharacter{00C2}{\^A}   % Â
+\DeclareUnicodeCharacter{00C3}{\~A}   % Ã
+\DeclareUnicodeCharacter{00CA}{\^E}   % Ê
+\DeclareUnicodeCharacter{00D4}{\^O}   % Ô
+\DeclareUnicodeCharacter{00DA}{\'U}   % Ú
+\DeclareUnicodeCharacter{0102}{\u A}  % Ă
+\DeclareUnicodeCharacter{0103}{\u a}  % ă
+\DeclareUnicodeCharacter{01A0}{\H O}  % Ơ
+\DeclareUnicodeCharacter{01A1}{\H o}  % ơ
+\DeclareUnicodeCharacter{01AF}{\H U}  % Ư
+\DeclareUnicodeCharacter{01B0}{\H u}  % ư
+\DeclareUnicodeCharacter{0110}{\DJ}   % Đ
+\DeclareUnicodeCharacter{0111}{\dj}   % đ
+% Tones on base vowels
+\DeclareUnicodeCharacter{1EA0}{\d A}  % Ạ
+\DeclareUnicodeCharacter{1EA1}{\d a}  % ạ
+\DeclareUnicodeCharacter{1EB0}{\`{\u A}}  % Ằ
+\DeclareUnicodeCharacter{1EB1}{\`{\u a}}  % ằ
+\DeclareUnicodeCharacter{1EB2}{\h{\u A}}  % Ẳ
+\DeclareUnicodeCharacter{1EB3}{\h{\u a}}  % ẳ
+\DeclareUnicodeCharacter{1EB4}{\~{\u A}}  % Ẵ
+\DeclareUnicodeCharacter{1EB5}{\~{\u a}}  % ẵ
+\DeclareUnicodeCharacter{1EB6}{\d{\u A}}  % Ặ
+\DeclareUnicodeCharacter{1EB7}{\d{\u a}}  % ặ
+\DeclareUnicodeCharacter{1EAC}{\d{\^A}}   % Ậ
+\DeclareUnicodeCharacter{1EAD}{\d{\^a}}   % ậ
+\DeclareUnicodeCharacter{1EB8}{\d E}  % Ẹ
+\DeclareUnicodeCharacter{1EB9}{\d e}  % ẹ
+\DeclareUnicodeCharacter{1EBA}{\h E}  % Ẻ
+\DeclareUnicodeCharacter{1EBB}{\h e}  % ẻ
+\DeclareUnicodeCharacter{1EBC}{\~E}   % Ẽ
+\DeclareUnicodeCharacter{1EBD}{\~e}   % ẽ
+\DeclareUnicodeCharacter{1EBE}{\'{\^E}}   % Ế
+\DeclareUnicodeCharacter{1EBF}{\'{\^e}}   % ế
+\DeclareUnicodeCharacter{1EC0}{\`{\^E}}   % Ề
+\DeclareUnicodeCharacter{1EC1}{\`{\^e}}   % ề
+\DeclareUnicodeCharacter{1EC2}{\h{\^E}}   % Ể
+\DeclareUnicodeCharacter{1EC3}{\h{\^e}}   % ể
+\DeclareUnicodeCharacter{1EC8}{\h I}  % Ỉ
+\DeclareUnicodeCharacter{1EC9}{\h i}  % ỉ
+\DeclareUnicodeCharacter{1ECA}{\d I}  % Ị
+\DeclareUnicodeCharacter{1ECB}{\d i}  % ị
+\DeclareUnicodeCharacter{1ECC}{\d O}  % Ọ
+\DeclareUnicodeCharacter{1ECD}{\d o}  % ọ
+\DeclareUnicodeCharacter{1ECE}{\h O}  % Ỏ
+\DeclareUnicodeCharacter{1ECF}{\h o}  % ỏ
+\DeclareUnicodeCharacter{1ED0}{\'{\^O}}   % Ố
+\DeclareUnicodeCharacter{1ED1}{\'{\^o}}   % ố
+\DeclareUnicodeCharacter{1ED4}{\h{\^O}}   % Ổ
+\DeclareUnicodeCharacter{1ED5}{\h{\^o}}   % ổ
+\DeclareUnicodeCharacter{1ED6}{\~{\^O}}   % Ỗ
+\DeclareUnicodeCharacter{1ED7}{\~{\^o}}   % ỗ
+\DeclareUnicodeCharacter{1ED8}{\d{\^O}}   % Ộ
+\DeclareUnicodeCharacter{1ED9}{\d{\^o}}   % ộ
+\DeclareUnicodeCharacter{1EDA}{\'{\H O}}  % Ớ
+\DeclareUnicodeCharacter{1EDB}{\'{\H o}}  % ớ
+\DeclareUnicodeCharacter{1EDC}{\`{\H O}}  % Ờ
+\DeclareUnicodeCharacter{1EDD}{\`{\H o}}  % ờ
+\DeclareUnicodeCharacter{1EDE}{\h{\H O}}  % Ở
+\DeclareUnicodeCharacter{1EDF}{\h{\H o}}  % ở
+\DeclareUnicodeCharacter{1EE0}{\~{\H O}}  % Ỡ
+\DeclareUnicodeCharacter{1EE1}{\~{\H o}}  % ỡ
+\DeclareUnicodeCharacter{1EE2}{\d{\H O}}  % Ợ
+\DeclareUnicodeCharacter{1EE3}{\d{\H o}}  % ợ
+\DeclareUnicodeCharacter{1EE4}{\d U}  % Ụ
+\DeclareUnicodeCharacter{1EE5}{\d u}  % ụ
+\DeclareUnicodeCharacter{1EE6}{\h U}  % Ủ
+\DeclareUnicodeCharacter{1EE7}{\h u}  % ủ
+\DeclareUnicodeCharacter{1EE8}{\'{\H U}}  % Ứ
+\DeclareUnicodeCharacter{1EE9}{\'{\H u}}  % ứ
+\DeclareUnicodeCharacter{1EEA}{\`{\H U}}  % Ừ
+\DeclareUnicodeCharacter{1EEB}{\`{\H u}}  % ừ
+\DeclareUnicodeCharacter{1EEC}{\h{\H U}}  % Ử
+\DeclareUnicodeCharacter{1EED}{\h{\H u}}  % ử
+\DeclareUnicodeCharacter{1EEE}{\~{\H U}}  % Ữ
+\DeclareUnicodeCharacter{1EEF}{\~{\H u}}  % ữ
+\DeclareUnicodeCharacter{1EF0}{\d{\H U}}  % Ự
+\DeclareUnicodeCharacter{1EF1}{\d{\H u}}  % ự
+\DeclareUnicodeCharacter{1EF2}{\`Y}   % Ỳ
+\DeclareUnicodeCharacter{1EF3}{\`y}   % ỳ
+\DeclareUnicodeCharacter{1EF4}{\d Y}  % Ỵ
+\DeclareUnicodeCharacter{1EF5}{\d y}  % ỵ
+\DeclareUnicodeCharacter{1EF6}{\h Y}  % Ỷ
+\DeclareUnicodeCharacter{1EF7}{\h y}  % ỷ
+\DeclareUnicodeCharacter{1EF8}{\~Y}   % Ỹ
+\DeclareUnicodeCharacter{1EF9}{\~y}   % ỹ
+% Special dashes in titlepage
+\DeclareUnicodeCharacter{2014}{---}   % em dash
+\DeclareUnicodeCharacter{2015}{---}   % horizontal bar
+
+\else
+\usepackage{fontspec}
+\setmainfont{texgyretermes-regular.otf}[
+  BoldFont=texgyretermes-bold.otf,
+  ItalicFont=texgyretermes-italic.otf,
+  BoldItalicFont=texgyretermes-bolditalic.otf
+]
+\fi
+\usepackage[english]{babel}
+
+% ── Math ──────────────────────────────────────────────────────────────
+\usepackage{amsmath,amssymb,amsthm}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newtheorem{definition}{{\bf Definition}}
+\newtheorem{theorem}{{\bf Theorem}}
+\newtheorem{property}{{\bf Property}}
+\newtheorem{proposition}{{\bf Proposition}}
+\newtheorem{corollary}[proposition]{{\bf Corollary}}
+\newtheorem{lemma}[proposition]{{\bf Lemma}}
+
+% ── Layout ────────────────────────────────────────────────────────────
+\usepackage{geometry}
+\usepackage{setspace}
+\usepackage{indentfirst}
+\usepackage{parskip}
+\usepackage[protrusion=true,expansion=false]{microtype}
+\usepackage{titlesec}
+
+\titleformat{\paragraph}[block]
+    {\normalfont\normalsize\bfseries}
+    {\theparagraph}{1em}{}
+
+\titlespacing*{\paragraph}
+    {0pt}{1.5ex}{0.5ex}
+% ── Headers / footers ─────────────────────────────────────────────────
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+
+% ── Section headings ──────────────────────────────────────────────────
+\usepackage{titlesec}
+
+% ── Tables ────────────────────────────────────────────────────────────
+\usepackage{longtable,array,tabularx,multirow,multicol,booktabs}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcolumntype{L}{>{\raggedright\arraybackslash}X}
+
+% ── Figures & graphics ────────────────────────────────────────────────
+\usepackage{graphicx,subcaption,float}
+\newcommand{\missinggraphic}[1]{\fbox{\parbox[c][2cm][c]{0.9\textwidth}{\centering #1}}}
+\usepackage{tikz}
+\usepackage{tcolorbox}
+\usetikzlibrary{arrows,backgrounds,calc}
+
+% ── Captions ──────────────────────────────────────────────────────────
+\usepackage{caption}
+
+% ── Misc ──────────────────────────────────────────────────────────────
+\usepackage{color,xcolor}
+\usepackage{enumerate,rotating,pdfpages,appendix,comment}
+
+% ── Algorithms ────────────────────────────────────────────────────────
+\usepackage[lined,boxed,commentsnumbered]{algorithm2e}
+\usepackage{algorithmic}
+\renewcommand{\algorithmicrequire}{\textbf{Input:}}
+\renewcommand{\algorithmicensure}{\textbf{Output:}}
+
+% ── Code listings ─────────────────────────────────────────────────────
+\usepackage{listings}
+
+% Colour palette — clean on white, high contrast, black-ink-friendly
+\definecolor{codebg}{RGB}{248,248,248}       % near-white background
+\definecolor{rulecol}{RGB}{200,200,200}      % left-bar accent
+\definecolor{linenumcol}{RGB}{170,170,170}   % line numbers: light grey
+\definecolor{kwcol}{RGB}{0,0,0}             % keywords: bold black
+\definecolor{strcol}{RGB}{0,95,170}         % strings: dark blue
+\definecolor{cmtcol}{RGB}{100,100,100}      % comments: mid grey italic
+\definecolor{funccol}{RGB}{0,0,0}           % function names: black
+
+% Algorithm2e colour theme — mirrors the code listing palette
+\definecolor{algokwcol}{RGB}{0,0,0}         % control-flow kw: bold black
+\definecolor{algofncol}{RGB}{0,70,150}      % function/proc names: dark blue
+\definecolor{algocmtcol}{RGB}{100,100,100}  % comments: mid grey italic
+\definecolor{algobg}{RGB}{251,251,251}      % algorithm box background
+\definecolor{algoframe}{RGB}{180,180,180}   % algorithm box border
+
+% Code uses listings, so compilation does not require shell escape.
+% Base style — used by plain \begin{lstlisting} blocks
+\lstset{
+  language        = Python,
+  backgroundcolor = \color{codebg},
+  frame           = l,
+  framesep        = 6pt,
+  framerule       = 2.5pt,
+  rulecolor       = \color{rulecol},
+  basicstyle      = \ttfamily\footnotesize\color{black},
+  keywordstyle    = \bfseries\color{kwcol},
+  stringstyle     = \color{strcol},
+  commentstyle    = \itshape\color{cmtcol},
+  numberstyle     = \tiny\color{linenumcol},
+  numbers         = left,
+  numbersep       = 10pt,
+  xleftmargin     = 18pt,
+  breaklines      = true,
+  tabsize         = 4,
+  showstringspaces= false,
+  captionpos      = b,
+  aboveskip       = 8pt,
+  belowskip       = 4pt
+}
+
+% Named style (used via [style=python] in Puzzle Pipes content)
+\lstdefinestyle{python}{
+  language        = Python,
+  backgroundcolor = \color{codebg},
+  frame           = l,
+  framesep        = 6pt,
+  framerule       = 2.5pt,
+  rulecolor       = \color{rulecol},
+  basicstyle      = \ttfamily\footnotesize\color{black},
+  keywordstyle    = \bfseries\color{kwcol},
+  stringstyle     = \color{strcol},
+  commentstyle    = \itshape\color{cmtcol},
+  numberstyle     = \tiny\color{linenumcol},
+  numbers         = left,
+  numbersep       = 10pt,
+  xleftmargin     = 18pt,
+  breaklines      = true,
+  tabsize         = 4,
+  showstringspaces= false,
+  captionpos      = b,
+  aboveskip       = 8pt,
+  belowskip       = 4pt
+}
+
+% ── Section heading style: clean minimal ─────────────────────────────
+\titleformat{\section}
+    {\large\bfseries}{\thesection.}{0.7em}{}
+    [{\color{rulecol}\titlerule[0.4pt]}]
+\titleformat{\subsection}
+    {\normalsize\bfseries}{\thesubsection.}{0.7em}{}
+\titleformat{\subsubsection}
+    {\normalsize\bfseries\itshape}{\thesubsubsection.}{0.7em}{} % chktex 6
+\titlespacing{\section}{0pt}{18pt}{6pt}
+\titlespacing{\subsection}{0pt}{12pt}{4pt}
+\titlespacing{\subsubsection}{0pt}{10pt}{2pt}
+
+% ── Hyperref (load last) ──────────────────────────────────────────────
+\usepackage{hyperref}
+\hypersetup{urlcolor=blue, linkcolor=black, citecolor=black, colorlinks=true}
+
+% ── Algorithm2e colour style ─────────────────────────────────────────
+\RestyleAlgo{ruled}
+\DeclareMathAlphabet{\mathcal}{OMS}{cmsy}{m}{n}
+
+% Line numbers: tiny grey (matching lstlisting)
+\SetAlgoNlRelativeSize{-1}
+\SetNlSty{tiny\color{linenumcol}}{}{}
+
+% Control-flow keywords: bold black
+\SetKwIF{If}{ElseIf}{Else}{%
+  \textbf{\color{algokwcol}if}}{%
+  \textbf{\color{algokwcol}then}}{%
+  \textbf{\color{algokwcol}else if}}{%
+  \textbf{\color{algokwcol}else}}{%
+  \textbf{\color{algokwcol}end if}}
+\SetKwFor{For}{%
+  \textbf{\color{algokwcol}for}}{%
+  \textbf{\color{algokwcol}do}}{%
+  \textbf{\color{algokwcol}end for}}
+\SetKwFor{ForEach}{%
+  \textbf{\color{algokwcol}foreach}}{%
+  \textbf{\color{algokwcol}do}}{%
+  \textbf{\color{algokwcol}end foreach}}
+\SetKwFor{While}{%
+  \textbf{\color{algokwcol}while}}{%
+  \textbf{\color{algokwcol}do}}{%
+  \textbf{\color{algokwcol}end while}}
+\SetKwInOut{KwIn}{\textbf{\color{algokwcol}Input}}
+\SetKwInOut{KwOut}{\textbf{\color{algokwcol}Output}}
+\SetKw{Return}{\textbf{\color{algokwcol}return}}
+\SetKw{KwRet}{\textbf{\color{algokwcol}return}}
+
+% Function/proc name: dark blue bold
+\SetKwProg{Fn}{%
+  \textbf{\color{algofncol}Function}}{:}{end}
+\SetKwProg{Proc}{%
+  \textbf{\color{algofncol}Procedure}}{:}{end}
+
+% Comments: grey italic — covers both \Comment and \tcp / \tcp*
+\SetKwComment{Comment}{\color{algocmtcol}/* }{ */}
+\newcommand{\algocmtstyle}[1]{\itshape\color{algocmtcol}#1\/}
+\SetCommentSty{algocmtstyle}
+% tcp inline comments inherit CommentSty automatically in algorithm2e
+
+% Algorithm box spacing
+\SetAlgoCaptionSeparator{.}
+\SetAlCapSkip{4pt}
+\setlength{\algomargin}{1.5em}
+
+% ── Line spacing ──────────────────────────────────────────────────────
+\renewcommand{\baselinestretch}{1.5}
+
+% ── Page geometry ─────────────────────────────────────────────────────
+\def\thesislayout{
+  \newgeometry{left=30mm, top=20mm, bottom=30mm, right=20mm}
+}
+\def\thesisheadlayout{
+  \geometry{a4paper, left=30mm, top=20mm, bottom=30mm, right=20mm}
+}
+
+% ── Misc settings ─────────────────────────────────────────────────────
+\AtBeginDocument{\renewcommand*\contentsname{Contents}}
+\AtBeginDocument{\renewcommand*\refname{References}}
+
+\thesisheadlayout{}
+\setlength{\headheight}{40pt}
+
+% Page style: no header, page number bottom-right only
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0.3pt}
+\fancyfoot[R]{\scriptsize Page {\thepage}/\pageref{LastPage}}
+
+\setlength\parindent{0pt}
+
+% ── Deep section numbering ───────────────────────────────────────────
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{3}
+\makeatletter
+\newcounter{subsubsubsection}[subsubsection]
+\renewcommand\thesubsubsubsection{\thesubsubsection.\@alph\c@subsubsubsection}
+\def\toclevel@subsubsubsection{4}
+\newcommand\subsubsubsection{\@startsection{subsubsubsection}{4}{\z@}%
+  {-3.25ex\@plus-1ex\@minus-.2ex}{1.5ex\@plus.2ex}%
+  {\normalfont\normalsize\bfseries}}
+\newcommand*\l@subsubsubsection{\@dottedtocline{3}{10.0em}{4.1em}}
+\newcommand*{\subsubsubsectionmark}[1]{}
+\newcommand\tab[1][1cm]{\hspace*{#1}}
+\newcommand\blank[1]{\rule[-.2ex]{#1}{.4pt}}
+\makeatother
+
+\setlength{\floatsep}{5pt plus 2pt minus 2pt}
+\setlength{\textfloatsep}{5pt plus 2pt minus 2pt}
+\setlength{\intextsep}{10pt plus 2pt minus 2pt}
+
+% ══════════════════════════════════════════════════════════════════════
+\begin{document}
+
+% ── Title page (UNCHANGED) ───────────────────────────────────────────
+\hypersetup{pageanchor=false}
+\begin{titlepage}
+\begin{tikzpicture}[remember picture, overlay]
+  \draw[line width = 4pt]
+    ($(current page.north west) + (30mm,-15mm)$)
+    rectangle
+    ($(current page.south east) + (-20mm,15mm)$);
+  \draw[line width=1.5pt]
+    ($(current page.north west) + (32mm,-17mm)$)
+    rectangle
+    ($(current page.south east) + (-22mm,17mm)$);
+\end{tikzpicture}
+
+\begin{center}
+\vspace{-0.5cm}
+{\fontsize{13pt}{16pt}\selectfont\bfseries
+  VIETNAM NATIONAL UNIVERSITY, HO CHI MINH CITY \\[2pt]
+  HO CHI MINH CITY UNIVERSITY OF TECHNOLOGY     \\[2pt]
+  FACULTY OF COMPUTER SCIENCE AND ENGINEERING
+}
+
+\includegraphics[width=8cm]{image/hcmut.png}
+
+{\Large\bfseries ASSIGNMENT [N]} \\[4pt]
+{\LARGE\bfseries \MakeUppercase{[Course Name] --- [Course Code]}} \\[4pt]
+{\Large\bfseries \MakeUppercase{[Assignment Topic]}}
+
+\rule{0.85\linewidth}{0.4mm} \\[6pt]
+{\LARGE\bfseries {{REPORT_TITLE}}} \\[4pt]
+\rule{0.85\linewidth}{0.4mm}
+
+\vspace{0.3cm}
+{\large\bfseries MAJOR\@: COMPUTER SCIENCE}
+
+\vspace{0.5cm}
+\begin{tabular}{rl}
+    \normalsize \textbf{CLASS:} & \normalsize [Class]   \\[6pt]
+    \normalsize \textbf{SUPERVISOR:}    & \normalsize [Supervisor Name]        \\[6pt]
+    \multicolumn{2}{c}{\normalsize\textbf{--- o0o ---}}                            \\[6pt]
+    \normalsize \textbf{STUDENT:} & \normalsize {{AUTHOR}} \hspace{1em} [ID]  \\[2pt]
+                                  & \normalsize [STUDENT NAME 2] \hspace{1em} [ID] \\[2pt]
+                                  & \normalsize [STUDENT NAME 3] \hspace{1em} [ID] \\
+\end{tabular}
+
+\vfill
+{\normalsize HO CHI MINH CITY, [Month Year]}
+
+\end{center}
+\end{titlepage}
+\hypersetup{pageanchor=true}
+
+\renewcommand{\figurename}{\textbf{Figure}}
+\renewcommand{\tablename}{\textbf{Table}}
+\newpage
+
+\pagenumbering{roman}
+\setcounter{page}{1}
+\tableofcontents
+\newpage
+\listoffigures
+\listoftables
+\newpage
+
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\thesislayout{}
+\include{1-Sample Section}
+
+\end{document}
