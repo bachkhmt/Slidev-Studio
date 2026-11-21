@@ -1,167 +1,146 @@
-# Slidev Studio 🎙️
+# Slidev Studio
 
-Ứng dụng Desktop (Electron + React + TypeScript + Tailwind CSS) chuyên dụng để quản lý, tạo mới và live-edit các bài thuyết trình **Slidev** với **Live Preview** tức thì qua Vite HMR.
+Slidev Studio là ứng dụng desktop để tạo, quản lý và chỉnh sửa bài thuyết trình Slidev. Ứng dụng tích hợp Monaco Editor, xem trước theo thời gian thực và xuất slide, đồng thời hỗ trợ soạn báo cáo Markdown A4 và cộng tác qua GitHub.
 
----
+[GitHub Releases](https://github.com/bachkhmt/Slidev-Studio/releases)
 
-## 🌟 Tính năng nổi bật theo kế hoạch dự án
+## Tính năng nổi bật
 
-- **Quản lý dự án thông minh (M2 & M6)**:
-  - Mở thư mục bài giảng Slidev có sẵn trên máy tính (`dialog.showOpenDialog`).
-  - Hỗ trợ cả project đơn file (`slides.md` như `KneeOsteo`) và project đa file song song (`slides-academic.md`, `slides-scholarly.md`... như `slidev-multi-theme`).
-  - Tự động nạp và lưu registry tại `~/.slidev-studio/projects.json`.
-  - Hỗ trợ clone trực tiếp từ Git repository (`git clone`).
-- **Trình tạo dự án mới — Zero-Setup Wizard (M2b)**:
-  - Wizard 3 bước tinh gọn: Tên & Vị trí -> Chọn Theme -> Tiêu đề & Tác giả.
-  - Tích hợp sẵn 9 theme tuyển chọn:
-    1. **Default Theme**: Giao diện tiêu chuẩn, linh hoạt.
-    2. **Frankfurt Academic**: Phong cách học thuật chuẩn Beamer (phù hợp báo cáo NCKH, chuyên đề xAI như trong KneeOsteo).
-    3. **Seriph (Editorial)**: Phong cách tạp chí trang nhã.
-    4. **Bricks Grid**: Thiết kế dạng khối hiện đại.
-    5. **Apple Basic**: Bố cục sáng tối giản theo phong cách Keynote.
-    6. **Shibainu**: Bảng màu pastel do Slidev phát hành.
-    7. **Penguin**: Theme cộng đồng cho bài thuyết trình kỹ thuật.
-    8. **Dracula**: Theme cộng đồng nền tối.
-    9. **HCMUT Bách Khoa**: Theme học thuật cục bộ với cover và thanh section riêng.
-  - Tự động stream log cài đặt dependencies và mở ngay vào Workspace khi hoàn thành.
-- **Quản lý tiến trình & Cổng thông minh (M3)**:
-  - Tự động dò và cấp phát cổng trống (Port Allocator), tránh xung đột khi mở nhiều bài thuyết trình cùng lúc.
-  - Bắt tín hiệu máy chủ sẵn sàng (`ready`) từ stdout và tự động kết nối Preview.
-  - Diệt triệt để toàn bộ tiến trình con khi đóng app bằng `tree-kill`.
-- **Trình biên tập Monaco Editor & Autosave (M4)**:
-  - Tích hợp VS Code Monaco Editor với cú pháp Markdown và Vue.
-  - **Autosave debounce 1200ms**: Guard Markdown mặc định tạm dừng autosave khi frontmatter, code fence, công thức hoặc thẻ component chưa cân bằng.
-  - Phím tắt `Cmd+S` / `Ctrl+S` để lưu thủ công ngay lập tức.
-  - Cây thư mục (File Tree) hỗ trợ duyệt và chuyển đổi nhanh giữa các file `.md`, `.vue`, ảnh...
-- **Live Preview qua Webview (M5)**:
-  - Môi trường preview cô lập an toàn bằng `<webview>`.
-  - Thanh công cụ điều hướng: Chuyển slide trước/sau (←/→), Tải lại trang, Mở trong trình duyệt ngoài, Mở chế độ Presenter (`?mode=presenter`).
-- **Multi-Tab đa dự án**:
-  - Hỗ trợ mở song song nhiều dự án trên các tab khác nhau, mỗi tab chạy một máy chủ dev riêng biệt với port độc lập.
-- **Đóng gói & Xuất bản (M7 & M8)**:
-  - Xuất bài thuyết trình sang **PDF**, **PNG**, **PowerPoint (PPTX)** hoặc build **Static Web App (dist)**.
-  - Stream nhật ký xuất file trực tiếp và nút mở nhanh thư mục chứa kết quả.
-  - Tùy chỉnh cỡ chữ Editor, giao diện sáng/tối (Dark/Light/System), thư mục lưu mặc định và ghi đè đường dẫn Node.js nếu cần.
-
----
+- **Quản lý dự án.** Mở thư mục có sẵn hoặc clone từ Git. Workspace hỗ trợ cả dự án có một file `slides.md` và dự án có nhiều bộ slide trong cùng thư mục.
+- **Tạo dự án từ mẫu.** Chọn tên và vị trí, chọn mẫu, rồi nhập tiêu đề và tác giả. Studio hiển thị tiến độ cài dependencies và mở workspace khi dự án sẵn sàng. Có chín theme Slidev gồm Default, Frankfurt Academic, Seriph, Bricks, Apple Basic, Shibainu, Penguin, Dracula và HCMUT Bách Khoa.
+- **Monaco Editor.** Chỉnh sửa Markdown và Vue, duyệt nội dung qua cây thư mục và lưu bằng `Ctrl+S` hoặc `Cmd+S`. Tự lưu mặc định sau 1,2 giây và tạm dừng nếu frontmatter, khối code, công thức hoặc thẻ component chưa đóng.
+- **Xem trước trực tiếp.** Studio tự cấp cổng cho mỗi Slidev dev server và cập nhật nội dung qua Vite HMR. Có thể mở bản xem trước trong trình duyệt hoặc chuyển sang chế độ Presenter.
+- **Nhiều tab.** Mở và chỉnh sửa nhiều dự án cùng lúc. Studio quản lý và dừng các tiến trình Slidev khi thoát ứng dụng.
+- **Xuất bản và tùy chỉnh.** Xuất PDF, PNG, PowerPoint (`.pptx`) hoặc bản web tĩnh. Cài đặt cho phép đổi giao diện, cỡ chữ editor, thư mục lưu mặc định và đường dẫn Node.js.
 
 ## Báo cáo Markdown / PDF
 
-Chọn **Tạo dự án mới → Báo cáo Markdown → Báo cáo Assignment Bách Khoa**. Toàn bộ nguồn nằm trong `main.md`: YAML đầu file chứa thông tin bìa; heading, bảng, ảnh và công thức được viết bằng Markdown. App dàn trang A4 và xuất PDF bằng Electron có sẵn, không cần TeX/Tectonic hoặc cài thêm npm cho dự án báo cáo.
+Chọn **Tạo dự án mới → Báo cáo Markdown → Báo cáo Assignment Bách Khoa**. Điền thông tin bìa trong YAML ở đầu `main.md`, rồi viết nội dung, bảng, hình và công thức bằng Markdown.
 
-Workspace có **Lưu & cập nhật PDF**, **Tự cập nhật khi lưu** và **Xuất PDF**. Bìa, mục lục, danh sách hình/bảng và số trang được tạo tự động. Lỗi YAML/ảnh được báo rõ và PDF thành công gần nhất được giữ. [Hướng dẫn cú pháp](electron/templates/dl-assignment-markdown/README.md).
+Dùng **Lưu & cập nhật PDF** để tạo bản xem trước hoặc bật **Tự cập nhật khi lưu**. Studio tự dàn trang A4, tạo bìa, mục lục, danh sách hình và bảng, rồi đánh số trang. Khi có lỗi ở YAML hoặc tệp ảnh, workspace báo lỗi và giữ bản PDF thành công gần nhất. Chọn **Xuất PDF** để lưu bản hoàn chỉnh.
 
-Bố cục HTML/CSS giữ phong cách mẫu báo cáo; ngắt dòng/dàn bảng có thể khác LaTeX. Dự án `.tex` từ bản preview trước vẫn được hỗ trợ khi mở lại, với bộ biên dịch Tectonic riêng.
+Bản đóng gói xuất PDF Markdown bằng Electron. Dự án LaTeX có sẵn (`.tex`) vẫn mở được và dùng Tectonic để biên dịch. [Cú pháp và mẫu Markdown](electron/templates/dl-assignment-markdown/README.md) · [Mẫu LaTeX](electron/templates/dl-assignment-report/README.md)
 
-Kiểm thử Markdown: `npm run build`, `npm run test:desktop:prepare`, rồi `npx playwright test tests/e2e/markdownReports.spec.ts`. Ca Markdown chạy offline với PATH trống. Chỉ ca LaTeX cũ mới cần `npm run test:report:prepare`.
+## Khởi chạy ứng dụng
 
-## 🚀 Khởi chạy ứng dụng
+### Quick Start
 
-### 1. Chạy chế độ phát triển (Development)
-
-Yêu cầu: Node.js 22 LTS và npm. Cài thêm Git nếu dùng chức năng clone hoặc cộng tác GitHub.
+Cài Git, Node.js **22 LTS** và npm. Nếu phiên bản đang dùng đã chỉ định Node.js trong `.nvmrc` và npm trong `packageManager`, dùng các phiên bản đó. Chạy các lệnh sau từ thư mục gốc của repo.
 
 ```bash
-# Cài đặt thư viện (nếu chưa cài)
 npm ci
-
-# Khởi động app ở chế độ dev
 npm run dev
 ```
 
-### 2. Kiểm tra mã nguồn và biên dịch
+### Kiểm tra mã nguồn và build
 
 ```bash
-# Kiểm tra TypeScript typecheck
-npm run typecheck
-
-# Build toàn bộ main, preload và renderer
+npm run lint
+npm test
 npm run build
 ```
 
-### 3. Đóng gói phân phối (Desktop Installer)
+`npm run build` kiểm tra kiểu TypeScript rồi biên dịch Electron main, preload và giao diện React vào `out/`. Dùng `npm run start` để mở bản vừa build.
 
-```bash
-# Đóng gói cho macOS (.dmg)
-npm run build:mac
+### Đóng gói ứng dụng
 
-# Đóng gói cho Windows (.exe - NSIS)
-npm run build:win
+| Nền tảng           | Lệnh                                     | Đầu ra                    |
+| ------------------ | ---------------------------------------- | ------------------------- |
+| Windows x64        | `npm run build:win -- --publish never`   | Bộ cài `.exe`             |
+| macOS (thử nghiệm) | `npm run build:mac -- --publish never`   | `.dmg` và ứng dụng `.app` |
+| Linux (thử nghiệm) | `npm run build:linux -- --publish never` | `.AppImage`               |
 
-# Đóng gói cho Linux (.AppImage)
-npm run build:linux
-```
+Chạy lệnh trên hệ điều hành tương ứng. Bản 1.0.2 xuất vào `dist/`. Xem `directories.output` trong `electron-builder.yml` để xác định đường dẫn của phiên bản đang dùng. Trên Windows, mở file Setup để cài hoặc chạy `win-unpacked/Slidev Studio.exe` trong thư mục đầu ra. Giữ nguyên thư mục `win-unpacked` khi dùng bản chạy trực tiếp.
 
-Trên Windows x64, `npm run build:win` tạo bộ cài `dist/Slidev Studio-Setup-1.0.2-x64.exe` và bản chạy trực tiếp `dist/win-unpacked/Slidev Studio.exe`. Bộ cài cho phép chọn thư mục, cài cho tài khoản hiện tại và tạo shortcut trên Desktop/Start Menu. Logo gốc `build/icon.png` được dùng cho ứng dụng, cửa sổ, shortcut và màn hình chính; macOS dùng `build/icon.icns`.
-
-Mở file Setup để cài đặt, hoặc chạy bản `win-unpacked` để dùng ngay (giữ nguyên cả thư mục). Máy chạy ứng dụng cần có Node.js và npm trong PATH để cài dependencies và chạy các dự án Slidev.
-
----
+Máy dùng Studio cần Node.js và npm để cài dependencies và chạy preview cho dự án Slidev.
 
 ## Cộng tác theo section
 
-Chọn mẫu **Cộng tác theo section** trong wizard để tạo bài ba phần và phân công bằng tài khoản GitHub. Workspace có **Lưu nháp**, **Đồng bộ**, **Gửi bài**, preview phần/tổng và export PDF/PPTX/web từ nhánh tổng. Chỉ section của bạn và thư mục asset tương ứng được phép sửa.
+Chọn mẫu **Cộng tác theo section** để tạo bài Slidev có ba section và phân công thành viên qua GitHub. Mỗi người chỉnh sửa section được giao và thư mục tài nguyên tương ứng. Workspace hỗ trợ **Lưu nháp**, **Đồng bộ**, **Gửi bài** và xem trước từng section hoặc toàn bài. Bản xuất PDF, PPTX hoặc web của toàn bài lấy nội dung từ nhánh chính trên `origin`.
 
-Đăng nhập GitHub từ Home bằng Client ID của OAuth App đã bật Device Flow. Điều phối cần tạo repository, mời thành viên và cấu hình bảo vệ nhánh. Xem [hướng dẫn nhóm](electron/templates/git-collab/README.md) và [ghi chú triển khai, kiểm chứng và giới hạn beta](plan/slidev-git-collab-implementation-30-09.md).
+Đăng nhập GitHub từ màn hình chính bằng Client ID của OAuth App đã bật Device Flow. Người điều phối tạo repo, mời thành viên và cấu hình bảo vệ nhánh. [Thiết lập cộng tác](electron/templates/git-collab/README.md)
 
-## 📁 Cấu trúc thư mục
+## Cấu trúc thư mục
 
-```
-Slidev/
+```text
+Slidev-Studio/
 ├── electron/
-│   ├── main.ts                 # Điểm khởi đầu Main process, cấu hình cửa sổ & cleanup
-│   ├── preload.ts              # Expose contextBridge API an toàn
+│   ├── main.ts                         # Vòng đời ứng dụng và cửa sổ Electron
+│   ├── preload.ts                      # API qua contextBridge
 │   ├── ipc/
-│   │   ├── projects.ipc.ts     # IPC quản lý danh sách dự án, cài đặt
-│   │   ├── process.ipc.ts      # IPC spawn, kill, restart Slidev dev server
-│   │   ├── fs.ipc.ts           # IPC đọc, ghi file, duyệt cây thư mục
-│   │   ├── scaffold.ipc.ts     # IPC clone template và npm install
-│   │   └── export.ipc.ts       # IPC xuất PDF, PNG, PPTX, build dist
+│   │   ├── projects.ipc.ts             # Quản lý dự án
+│   │   ├── process.ipc.ts              # Điều khiển Slidev dev server
+│   │   ├── fs.ipc.ts                   # Đọc, ghi và duyệt tệp
+│   │   ├── scaffold.ipc.ts             # Tạo dự án từ mẫu
+│   │   ├── export.ipc.ts               # Xuất slide
+│   │   ├── reports.ipc.ts              # Xem trước và xuất báo cáo
+│   │   └── collab.ipc.ts               # Cộng tác qua GitHub
 │   ├── services/
-│   │   ├── projectStore.ts     # Registry lưu trữ ~/.slidev-studio/projects.json
-│   │   ├── processManager.ts   # Quản lý tiến trình execa + tree-kill + port detector
-│   │   ├── scaffolder.ts       # Nhân bản template + ghi đè frontmatter + npm install
-│   │   └── portFinder.ts       # Cấp phát port tự động
-│   └── templates/              # Mẫu template được bundle sẵn
-│       ├── default/
-│       ├── git-collab/         # Ba section, manifest, CODEOWNERS và CI
-│       ├── frankfurt-academic/
-│       ├── seriph/
-│       ├── bricks/
+│   │   ├── projectStore.ts             # Danh sách dự án và cài đặt
+│   │   ├── processManager.ts           # Tiến trình Slidev dev server
+│   │   ├── portFinder.ts               # Cấp phát cổng
+│   │   ├── scaffolder.ts               # Tạo dự án từ mẫu
+│   │   ├── reportManager.ts            # Vòng đời và xuất bản báo cáo
+│   │   └── markdownPdf.ts              # Dựng PDF từ báo cáo Markdown
+│   └── templates/
+│       ├── default/                    # Mẫu Slidev mặc định
 │       ├── apple-basic/
-│       ├── shibainu/
-│       ├── penguin/
+│       ├── bricks/
 │       ├── dracula/
-│       └── hcmut-bach/         # Project template with bundled local theme
-├── src/                        # Renderer UI (React + Tailwind CSS)
-│   ├── App.tsx                 # Điều hướng Home / Wizard / Workspace
-│   ├── main.tsx                # React root mount
+│       ├── frankfurt-academic/
+│       ├── penguin/
+│       ├── seriph/
+│       ├── shibainu/
+│       ├── hcmut-bach/                 # Mẫu Slidev với theme HCMUT đi kèm
+│       ├── git-collab/                 # Mẫu cộng tác theo section
+│       ├── dl-assignment-markdown/     # Mẫu báo cáo Markdown A4
+│       └── dl-assignment-report/       # Mẫu báo cáo LaTeX
+├── src/
+│   ├── App.tsx                         # Điều hướng và workspace
+│   ├── main.tsx                        # Điểm khởi chạy giao diện React
 │   ├── pages/
-│   │   ├── HomeDashboard.tsx   # Màn hình chính quản lý dự án
-│   │   ├── ProjectWorkspace.tsx# Workspace 3 cột (FileTree + Editor + Preview)
-│   │   └── NewProjectWizard.tsx# Wizard 3 bước tạo dự án mới
+│   │   ├── HomeDashboard.tsx           # Quản lý dự án
+│   │   ├── NewProjectWizard.tsx        # Tạo dự án
+│   │   ├── ProjectWorkspace.tsx        # Workspace Slidev
+│   │   ├── ReportWorkspace.tsx         # Workspace báo cáo
+│   │   └── SettingsPage.tsx            # Cài đặt ứng dụng
 │   ├── components/
-│   │   ├── ProjectCard.tsx     # Thẻ dự án
-│   │   ├── FileTree.tsx        # Cây thư mục dự án
-│   │   ├── EditorPane.tsx      # Monaco Editor + guarded autosave 1200ms
-│   │   ├── PreviewPane.tsx     # Live Preview qua <webview>
-│   │   ├── ProcessConsole.tsx  # Nhật ký terminal dev server realtime
-│   │   ├── ExportDialog.tsx    # Hộp thoại xuất file PDF/PPTX/PNG/Build
-│   │   └── SettingsPage.tsx    # Cài đặt giao diện, editor, máy chủ, Node path
-│   └── ipc-client.ts           # Wrapper gọi window.api an toàn
-├── electron-builder.yml        # Cấu hình đóng gói dmg, nsis, AppImage
-├── electron.vite.config.ts     # Cấu hình electron-vite
-└── package.json
+│   │   ├── EditorPane.tsx              # Trình soạn thảo Monaco
+│   │   ├── FileTree.tsx                # Cây thư mục dự án
+│   │   ├── PreviewPane.tsx             # Xem trước Slidev
+│   │   ├── PdfPreview.tsx              # Xem trước PDF
+│   │   └── ExportDialog.tsx            # Hộp thoại xuất slide
+│   └── ipc-client.ts                   # Gọi API qua preload
+├── shared/                             # Kiểu dữ liệu dùng chung giữa Electron và React
+├── build/                              # Tài nguyên đóng gói
+├── examples/                           # Dự án mẫu
+├── reports/                            # Kết quả kiểm thử và benchmark
+├── scripts/                            # Công cụ kiểm thử, đóng gói và phát hành
+├── tests/                              # Test, fixture và kịch bản Electron E2E
+├── electron-builder.yml                # Cấu hình bộ cài
+├── electron.vite.config.ts             # Cấu hình build Electron
+└── package.json                        # Dependencies và lệnh npm
 ```
 
 ## Kiểm thử desktop và hiệu năng
 
-Báo cáo mẫu hoàn chỉnh có thể mở trực tiếp từ [examples/dl-assignment1-markdown](examples/dl-assignment1-markdown/README.md), gồm nguồn Markdown và đủ 36 hình sử dụng trong nội dung. Mẫu báo cáo trống được đóng gói tại `electron/templates/dl-assignment-markdown/` và xuất hiện trong wizard **Báo cáo Markdown**.
+Tạo dự án từ mẫu báo cáo Markdown trong Studio, sau đó cập nhật bản xem trước và xuất PDF để thử quy trình.
 
-Monaco và worker được đóng gói cùng ứng dụng để editor hoạt động offline. Workspace giữ bản nháp khi chuyển file, chỉ đóng sau khi xử lý nội dung chưa lưu, và giới hạn hai preview gần dùng.
+Monaco và các worker được đóng gói cùng ứng dụng để editor hoạt động offline. Workspace giữ bản nháp khi chuyển tệp, xử lý nội dung chưa lưu trước khi đóng tab và giữ tối đa hai bản xem trước gần dùng.
 
-Chạy `npm run test:desktop:prepare` một lần để cài runtime fixture theo lockfile, sau đó `npm run test:e2e` cho Electron thật, `npm run test:export` để xuất PDF/PPTX/web thật và `npm run test:benchmark` để đo hiệu năng. Unit/component test chạy bằng `npm test`.
+| Lệnh                           | Mục đích                                                  |
+| ------------------------------ | --------------------------------------------------------- |
+| `npm test`                     | Chạy unit test và component test                          |
+| `npm run test:desktop:prepare` | Cài runtime Slidev dùng cho kiểm thử                      |
+| `npm run test:report:prepare`  | Chuẩn bị Tectonic và cache TeX cho ca LaTeX sau khi build |
+| `npm run test:e2e`             | Build và chạy kiểm thử trên Electron                      |
+| `npm run test:export`          | Kiểm thử xuất PDF, PPTX và web                            |
+| `npm run test:benchmark`       | Đo hiệu năng desktop                                      |
 
-Xem [báo cáo kiểm chứng](reports/implementation.md) và các số đo JSON trong `reports/`. Bộ cài cũ được giữ trong `dist/releases/baseline/`.
+Chuẩn bị runtime Slidev trước khi chạy E2E. Với ca LaTeX, chạy `npm run build` rồi chuẩn bị Tectonic trước khi chạy bộ test. [Báo cáo kiểm chứng](reports/implementation.md) · [Kết quả kiểm thử Windows](reports/validation.md)
 
-Bản 1.0.2 sửa thao tác cộng tác khi workspace có file chỉ đọc và khi đang khóa editor để chạy Git. Xem [phạm vi kiểm thử cộng tác](reports/team-workflow.md) và [kết quả bản Windows](reports/validation.md).
+## Tài liệu
+
+- [Tích hợp báo cáo Markdown](reports/markdown-template-integration.md)
+- [Tích hợp báo cáo LaTeX](reports/latex-template-integration.md)
+- [Triển khai và kiểm thử cộng tác](reports/team-workflow.md)
